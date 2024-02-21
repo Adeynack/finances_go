@@ -1,0 +1,47 @@
+{
+  "name": "finances (go)",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "devcontainer",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "containerEnv": {
+    "LOCAL_WORKSPACE_FOLDER_BASENAME": "${localWorkspaceFolderBasename}"
+  },
+  "remoteUser": "root",
+  // "postCreateCommand": "make gen build",
+  // "forwardPorts": [
+  //   30301,
+  //   30302
+  // ],
+  // "portsAttributes": {
+  //   "30301": {
+  //     "label": "server"
+  //   },
+  //   "30302": {
+  //     "label": "psql"
+  //   }
+  // },
+  // "otherPortsAttributes": {
+  //   "onAutoForward": "ignore"
+  // },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "rvest.vs-code-prettier-eslint",
+        "ms-vscode-remote.remote-containers",
+        "darkriszty.markdown-table-prettify",
+        "wmaurer.change-case",
+        "yzhang.markdown-all-in-one",
+        "darkriszty.markdown-table-prettify",
+        "trybick.terminal-zoom",
+        "netcorext.uuid-generator",
+        "redhat.vscode-yaml",
+        "ms-azuretools.vscode-docker",
+        "golang.go",
+        "ms-vscode.makefile-tools",
+        "neonxp.gotools"
+      ]
+    }
+  }
+}

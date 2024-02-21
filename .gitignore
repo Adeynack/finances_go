@@ -1,0 +1,10 @@
+# overmind
+.overmind.sock
+
+# macOS
+.DS_Store
+
+# Misc
+bin
+tmp
+__debug_bin*

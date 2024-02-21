@@ -1,0 +1,30 @@
+version: "3"
+
+name: finances
+
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 40001
+    volumes:
+      - ../..:/workspaces:cached
+    command: sleep infinity
+    network_mode: host
+
+  postgres:
+    image: postgres:15.1
+    restart: unless-stopped
+    ports:
+      - 40002:5432
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    command: "-c log_statement=all"
+
+volumes:
+  postgres-data:
