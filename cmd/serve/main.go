@@ -24,7 +24,7 @@ func main() {
 	<-interruptCtx.Done()
 	log.Println("server shutting down")
 	if err := shutdownServer(); err != nil {
-		log.Fatalf("error shutting server down: %s", err)
+		log.Fatal(err)
 	} else {
 		log.Println("server gracefully terminated")
 	}

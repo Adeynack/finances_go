@@ -13,11 +13,12 @@ import (
 func StartHttpServer(config ServerConfiguration) ServerShutdownFunc {
 	// Create & initialize http server
 	e := echo.New()
+	e.HideBanner = true
 	routes.Draw(e)
 
 	// Start the server in the background
 	go func() {
-		address := fmt.Sprintf(":%d", config.Port)
+		address := fmt.Sprintf("localhost:%d", config.Port)
 		if err := e.Start(address); err != nil && err != http.ErrServerClosed {
 			e.Logger.Fatalf("error shutting down server: %s", err)
 		}

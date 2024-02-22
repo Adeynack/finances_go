@@ -13,7 +13,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive && apt -y install --
 RUN <<EOF cat >> ~/.bashrc
 
 # Shorter prompt (fitting narrow VSCode windows without wrapping)
-export PS1="\[\]gql-ex/go_gqlgen_gorm\$ \[\]"
+export PS1="\[\]finances:\w\$ \[\]"
 
 # Default PostgreSQL Connection
 # Will automatically connect to the devcontainer's attached PostgreSQL
@@ -32,6 +32,7 @@ RUN go install -v github.com/go-delve/delve/cmd/dlv@latest
 RUN go install -v honnef.co/go/tools/cmd/staticcheck@latest
 
 # Install tools needed by the project's development operations
+RUN go install -v github.com/a-h/templ/cmd/templ@latest
 RUN go install -v github.com/DarthSim/overmind@latest
 RUN go install -v github.com/cosmtrek/air@latest
 RUN go install -v honnef.co/go/tools/cmd/staticcheck@latest
