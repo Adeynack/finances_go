@@ -5,7 +5,7 @@
   "version": "0.2.0",
   "configurations": [
     // Inspired from https://medium.com/average-coder/how-to-debug-a-running-go-app-with-vscode-76e3eac45bd
-    // Does not work well enough for the moment. Use `Attach to Process` and find `bin/serve` in the list. 🤷🏼‍♂️
+    // Does not work well enough for the moment. Use `Attach to Process` and find `out/serve` in the list. 🤷🏼‍♂️
     // {
     //   "name": "Attach to dlv",
     //   "type": "go",

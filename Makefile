@@ -9,13 +9,13 @@ run_watch:
 
 # Build binaries
 build:
-	go build -o bin/serve ./cmd/serve/*.go
+	go build -o out/serve ./cmd/serve/*.go
 
 build_for_debug:
-	go build -gcflags=all="-N -l" -o bin/serve ./cmd/serve/*.go
+	go build -gcflags=all="-N -l" -o out/serve ./cmd/serve/*.go
 
 build_for_debug_watch:
-	air -build.bin=bin/serve -build.cmd "make build_for_debug"
+	air -build.bin=out/serve -build.cmd "make build_for_debug"
 
 # Generate
 
@@ -34,7 +34,7 @@ dev:
 # Misc
 
 clean:
-	rm -f bin/serve
+	rm -rf out
 	find . -name *_templ.go -exec rm {} \;
 	find . -name *_templ.txt -exec rm {} \;
 	go clean -cache -testcache

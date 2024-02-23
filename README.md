@@ -12,7 +12,7 @@ This will start watching for modifications in `go` and `templ` (templates) files
 
 ### Debug
 
-The included _VSCode_ settings allow to attach to existing _Go_ process (the one started by `make dev`). Select the _Attach to Process_ configuration and upon start of the debugger, find the `bin/serve` process in the list.
+The included _VSCode_ settings allow to attach to existing _Go_ process (the one started by `make dev`). Select the _Attach to Process_ configuration and upon start of the debugger, find the `out/serve` process in the list.
 
 Caveats:
 

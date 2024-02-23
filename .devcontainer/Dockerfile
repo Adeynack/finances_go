@@ -32,7 +32,8 @@ RUN go install -v github.com/go-delve/delve/cmd/dlv@latest
 RUN go install -v honnef.co/go/tools/cmd/staticcheck@latest
 
 # Install tools needed by the project's development operations
-RUN go install -v github.com/a-h/templ/cmd/templ@latest
-RUN go install -v github.com/DarthSim/overmind@latest
-RUN go install -v github.com/cosmtrek/air@latest
+RUN go install -v github.com/a-h/templ/cmd/templ@v0.2.543
+RUN go install -v github.com/DarthSim/overmind@v2.0.1
+RUN go install -v github.com/cosmtrek/air@v1.50.0
 RUN go install -v honnef.co/go/tools/cmd/staticcheck@latest
+RUN go install -v -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.17.0
