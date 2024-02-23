@@ -35,6 +35,8 @@ dev:
 
 clean:
 	rm -f bin/serve
+	find . -name *_templ.go -exec rm {} \;
+	find . -name *_templ.txt -exec rm {} \;
 	go clean -cache -testcache
 
 test:

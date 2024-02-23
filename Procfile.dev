@@ -1,2 +1,2 @@
-serve: make build_for_debug_watch
+serve: sleep 2 && make build_for_debug_watch
 templ: make gen_templ_watch
