@@ -24,12 +24,23 @@
       "processId": "${command:pickGoProcess}"
     },
     {
-      "name": "Server",
+      "name": "Server (ENV dev)",
       "type": "go",
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/cmd/serve/main.go",
       "cwd": "${workspaceFolder}",
+    },
+    {
+      "name": "Server (ENV test)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/serve/main.go",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "APP_ENV": "test"
+      }
     },
   ]
 }

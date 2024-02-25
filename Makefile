@@ -1,6 +1,9 @@
 PORT ?= 40001
+APP_ENV ?= dev
+PGDBPREFIX ?= finances
 
 # Start development server
+
 run:
 	go run cmd/serve/*.go
 
@@ -8,6 +11,7 @@ run_watch:
 	air -build.bin="make run" -build.cmd="/bin/true" -build.include_ext="go,mod"
 
 # Build binaries
+
 build:
 	go build -o out/serve ./cmd/serve/*.go
 
@@ -28,10 +32,11 @@ gen_templ_watch:
 gen: gen_templ
 
 # Dev
+
 dev:
 	overmind start -f Procfile.dev -p $(PORT)
 
-# Misc
+# Test / Lint / Clean
 
 clean:
 	rm -rf out
@@ -49,3 +54,21 @@ lint: build
 	staticcheck ./...
 
 check: clean gen build lint test
+
+# Database
+
+db_create:
+	echo "SELECT 'CREATE DATABASE \"$(PGDBPREFIX)_dev\"' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'finances')\gexec" | psql
+	echo "SELECT 'CREATE DATABASE \"$(PGDBPREFIX)_test\"' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'finances')\gexec" | psql
+
+db_migrate:
+	PGDB="$(PGDBPREFIX)_$(APP_ENV)" bin/goose up
+
+db_drop:
+	echo "drop database if exists \"$(PGDBPREFIX)_dev\"" | psql
+	echo "drop database if exists \"$(PGDBPREFIX)_test\"" | psql
+
+db_seed:
+	echo "TODO: Seed"
+
+db_full_reset: db_drop db_create db_migrate db_seed

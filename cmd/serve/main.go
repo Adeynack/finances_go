@@ -2,21 +2,25 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
-	"strconv"
+	"strings"
 
-	"github.com/adeynack/finances/server"
+	"github.com/adeynack/finances/app"
+	"github.com/adeynack/finances/db"
 )
 
 func main() {
-	config, err := parseConfiguration()
-	if err != nil {
+	app.InitAppEnvironment()
+
+	shutdownServer, err := app.StartHttpServer()
+	if trappedMigrationsError, ok := err.(*db.TrappedMigrationsError); ok {
+		// TODO: Move to future `cmd/tool` or `cmd/dev` dev-ops binary
+		log.Fatalf("\n\nPending migrations:\n%s\n\n", strings.Join(trappedMigrationsError.PendingMigrations, "\n"))
+	} else if err != nil {
 		log.Fatalln(err)
 	}
-	shutdownServer := server.StartHttpServer(config)
 
 	// Listen for interrupt signal (eg: Ctrl-C) to gracefully shutdown the server
 	interruptCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -28,20 +32,4 @@ func main() {
 	} else {
 		log.Println("server gracefully terminated")
 	}
-}
-
-func parseConfiguration() (server.ServerConfiguration, error) {
-	var err error
-	config := server.ServerConfiguration{}
-
-	if portEnv := os.Getenv("PORT"); portEnv == "" {
-		config.Port = 40001
-	} else {
-		config.Port, err = strconv.Atoi(portEnv)
-		if err != nil {
-			return config, fmt.Errorf("could not convert %q to a port number: %s", portEnv, err)
-		}
-	}
-
-	return config, nil
 }

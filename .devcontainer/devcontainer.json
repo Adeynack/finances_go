@@ -41,7 +41,8 @@
         "golang.go",
         "ms-vscode.makefile-tools",
         "neonxp.gotools",
-        "a-h.templ"
+        "a-h.templ",
+        "adpyke.vscode-sql-formatter"
       ]
     }
   }

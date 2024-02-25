@@ -1,3 +1,7 @@
+# Environments
+.env.local
+.env.*.local
+
 # Templ generated code
 *_templ.go
 *_templ.txt
