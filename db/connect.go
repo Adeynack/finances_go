@@ -74,15 +74,17 @@ func determineDsn() (string, error) {
 func attemptAutoMigrate(dialector gorm.Dialector) error {
 	allowAutoMigrate := utils.ReadEnvBoolean("DB_AUTO_MIGRATE", false)
 
-	migrateDialector := dialector
+	// ensure info logging is active so the "migration trap" to work
+	logger := logger.Default.LogMode(logger.Info)
+	var trapLogger *migrationTrapLogger
 	if !allowAutoMigrate {
-		migrateDialector = NewMigrationTrapDialector(dialector)
+		trapLogger = &migrationTrapLogger{BaseLogger: logger}
+		logger = trapLogger
 	}
 
-	db, err := gorm.Open(migrateDialector, &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info), // ensure info logging is active so the "migration trap" to work
-		DryRun: true,
-	})
+	// DryRun, unless allowAutoMigrate, in order to trap pending migrations without executing them.
+	db, err := gorm.Open(dialector, &gorm.Config{Logger: logger, DryRun: !allowAutoMigrate})
+	db.DryRun = false // Config.DryRun is not enough (see https://github.com/go-gorm/gorm/issues/5740#issuecomment-1582053954)
 	if err != nil {
 		return fmt.Errorf("error opening database connection for auto-migrate: %v", err)
 	}
@@ -90,11 +92,11 @@ func attemptAutoMigrate(dialector gorm.Dialector) error {
 	err = db.AutoMigrate(
 		model.User{},
 	)
-
-	if _, ok := err.(*TrappedMigrationsError); ok {
-		return err
-	} else if err != nil {
+	if err != nil {
 		return fmt.Errorf("error migrating database: %v", err)
+	}
+	if trapLogger != nil && len(trapLogger.PendingMigrations) > 0 {
+		return &TrappedMigrationsError{PendingMigrations: trapLogger.PendingMigrations}
 	}
 
 	return nil

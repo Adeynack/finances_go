@@ -8,7 +8,7 @@ import (
 )
 
 type User struct {
-	baseModel
+	BaseModel
 	Email             string `gorm:"not null;uniqueIndex" json:"email"`
 	DisplayName       string `gorm:"not null" json:"display_name"`
 	EncryptedPassword string `gorm:"not null" json:"-"`
