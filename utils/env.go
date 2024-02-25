@@ -6,7 +6,8 @@ import (
 )
 
 func ReadEnvBoolean(key string, defaultValue bool) bool {
-	switch strings.ToUpper(os.Getenv(key)) {
+	value := os.Getenv(key)
+	switch strings.ToLower(value) {
 	case "1", "true", "t", "yes", "y":
 		return true
 	case "0", "false", "f", "no", "n":

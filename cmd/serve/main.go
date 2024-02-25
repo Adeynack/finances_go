@@ -17,7 +17,7 @@ func main() {
 	shutdownServer, err := app.StartHttpServer()
 	if trappedMigrationsError, ok := err.(*db.TrappedMigrationsError); ok {
 		// TODO: Move to future `cmd/tool` or `cmd/dev` dev-ops binary
-		log.Fatalf("\n\nPending migrations:\n%s\n\n", strings.Join(trappedMigrationsError.PendingMigrations, "\n"))
+		log.Fatalf("\n\nDatabase migration is missing those elements to\nbe in sync with the actual Gorm declared model:\n\n%s;\n\n", strings.Join(trappedMigrationsError.PendingMigrations, ";\n\n"))
 	} else if err != nil {
 		log.Fatalln(err)
 	}

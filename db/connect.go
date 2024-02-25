@@ -12,18 +12,21 @@ import (
 )
 
 func Connect() (*gorm.DB, error) {
-	dialector, err := buildDialector()
+	dsn, err := determineDsn()
 	if err != nil {
+		return nil, fmt.Errorf("error establishing database connection parameters: %v", err)
+	}
+	dialector := postgres.Open(dsn)
+	if err = attemptAutoMigrate(dialector); err != nil {
 		return nil, err
 	}
+
+	// Create application's Gorm DB.
 	db, err := gorm.Open(dialector, &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error opening database connection: %v", err)
-	}
-	if err = migrate(db); err != nil {
-		return nil, err
 	}
 	return db, nil
 }
@@ -68,39 +71,31 @@ func determineDsn() (string, error) {
 	return dsn, nil
 }
 
-func buildDialector() (gorm.Dialector, error) {
-	dsn, err := determineDsn()
+func attemptAutoMigrate(dialector gorm.Dialector) error {
+	allowAutoMigrate := utils.ReadEnvBoolean("DB_AUTO_MIGRATE", false)
+
+	migrateDialector := dialector
+	if !allowAutoMigrate {
+		migrateDialector = NewMigrationTrapDialector(dialector)
+	}
+
+	db, err := gorm.Open(migrateDialector, &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info), // ensure info logging is active so the "migration trap" to work
+		DryRun: true,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("error establishing database connection parameters: %v", err)
+		return fmt.Errorf("error opening database connection for auto-migrate: %v", err)
 	}
 
-	baseDialector := postgres.Open(dsn)
-	if utils.ReadEnvBoolean("DB_AUTO_MIGRATE", false) {
-		return baseDialector, nil
-	}
-
-	return NewMigrationTrapDialector(baseDialector), nil
-}
-
-func migrate(db *gorm.DB) error {
-	err := db.AutoMigrate(
+	err = db.AutoMigrate(
 		model.User{},
 	)
+
 	if _, ok := err.(*TrappedMigrationsError); ok {
 		return err
 	} else if err != nil {
 		return fmt.Errorf("error migrating database: %v", err)
 	}
-
-	// dialector, ok := db.Dialector.(*MigrationTrapDialector)
-	// if ok && len(dialector.MigrationChanges) > 0 {
-	// 	ctx := context.Background()
-	// 	db.Logger.Warn(ctx, "Pending changes detected by Gorm's AutoMigrate:")
-	// 	for index, change := range dialector.MigrationChanges {
-	// 		db.Logger.Warn(ctx, "%d: %s", index, change)
-	// 	}
-	// 	return fmt.Errorf("in %q, the database is expected to have been updated through migrations", os.Getenv("APP_ENV"))
-	// }
 
 	return nil
 }

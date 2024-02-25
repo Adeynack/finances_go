@@ -1,11 +1,12 @@
 package db
 
 import (
-	"fmt"
+	"context"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
+	"gorm.io/gorm/logger"
 )
 
 type TrappedMigrationsError struct {
@@ -28,116 +29,78 @@ func NewMigrationTrapDialector(baseDialector gorm.Dialector) *MigrationTrapDiale
 
 func (d *MigrationTrapDialector) Migrator(db *gorm.DB) gorm.Migrator {
 	if d.migrator == nil {
-		d.migrator = &MigrationTrapMigrator{Migrator: d.Dialector.Migrator(db)}
+		d.migrator = &MigrationTrapMigrator{
+			Migrator: d.Dialector.Migrator(db),
+			db:       db,
+		}
 	}
 	return d.migrator
 }
 
-type MigrationTrapMigrator struct {
-	gorm.Migrator
-	trappedMigrations []string
+type migrationTrapLogger struct {
+	BaseLogger        logger.Interface
+	PendingMigrations []string
 }
 
-func (m *MigrationTrapMigrator) addChange(format string, args ...any) error {
-	m.trappedMigrations = append(m.trappedMigrations, fmt.Sprintf(format, args...))
-	return nil
+// Error implements logger.Interface.
+func (l *migrationTrapLogger) Error(ctx context.Context, fmt string, args ...interface{}) {
+	l.BaseLogger.Error(ctx, fmt, args...)
+}
+
+// Info implements logger.Interface.
+func (l *migrationTrapLogger) Info(ctx context.Context, fmt string, args ...interface{}) {
+	l.BaseLogger.Info(ctx, fmt, args...)
+}
+
+// LogMode implements logger.Interface.
+func (l *migrationTrapLogger) LogMode(logger.LogLevel) logger.Interface {
+	panic("unimplemented")
+}
+
+// Trace implements logger.Interface.
+func (l *migrationTrapLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
+	l.BaseLogger.Trace(
+		ctx,
+		begin,
+		func() (sql string, rowsAffected int64) {
+			sql, rowsAffected = fc()
+			l.considerQuery(sql)
+			return
+		},
+		err,
+	)
+}
+
+// Warn implements logger.Interface.
+func (l *migrationTrapLogger) Warn(ctx context.Context, fmt string, args ...interface{}) {
+	l.BaseLogger.Warn(ctx, fmt, args...)
+}
+
+func (l *migrationTrapLogger) considerQuery(sql string) {
+	upSql := strings.ToUpper(sql)
+	if strings.HasPrefix(upSql, "SELECT ") {
+		return
+	}
+
+	l.PendingMigrations = append(l.PendingMigrations, sql)
+}
+
+type MigrationTrapMigrator struct {
+	gorm.Migrator
+	db *gorm.DB
 }
 
 func (m *MigrationTrapMigrator) AutoMigrate(dst ...interface{}) error {
+	// Logger is bypassed to be able to trap migrations' SQL queries.
+	trapLogger := &migrationTrapLogger{BaseLogger: m.db.Logger}
+	m.db.Logger = trapLogger
+
 	err := m.Migrator.AutoMigrate(dst...)
 	if err != nil {
 		return err
 	}
-	if len(m.trappedMigrations) > 0 {
-		return &TrappedMigrationsError{PendingMigrations: m.trappedMigrations}
+	if len(trapLogger.PendingMigrations) > 0 {
+		return &TrappedMigrationsError{PendingMigrations: trapLogger.PendingMigrations}
 	}
 	return nil
-}
-
-// AddColumn implements gorm.Migrator.
-func (m *MigrationTrapMigrator) AddColumn(dst interface{}, field string) error {
-	return m.addChange("Add column: %v %v", dst, field)
-}
-
-// AlterColumn implements gorm.Migrator.
-func (m *MigrationTrapMigrator) AlterColumn(dst interface{}, field string) error {
-	return m.addChange("Alter column: %v %v", dst, field)
-}
-
-// CreateConstraint implements gorm.Migrator.
-func (m *MigrationTrapMigrator) CreateConstraint(dst interface{}, name string) error {
-	return m.addChange("Create constraint: %v %v", dst, name)
-}
-
-// CreateIndex implements gorm.Migrator.
-func (m *MigrationTrapMigrator) CreateIndex(dst interface{}, name string) error {
-	return m.addChange("Create index: %v, %v", dst, name)
-}
-
-// CreateTable implements gorm.Migrator.
-func (m *MigrationTrapMigrator) CreateTable(dst ...interface{}) error {
-	return m.addChange("Create table: %s", dstTypeNames(dst))
-}
-
-// CreateView implements gorm.Migrator.
-func (m *MigrationTrapMigrator) CreateView(name string, option gorm.ViewOption) error {
-	return m.addChange("Create view: %v %v", name, option)
-}
-
-// DropColumn implements gorm.Migrator.
-func (m *MigrationTrapMigrator) DropColumn(dst interface{}, field string) error {
-	return m.addChange("Drop column: %v %v", dst, field)
-}
-
-// DropConstraint implements gorm.Migrator.
-func (m *MigrationTrapMigrator) DropConstraint(dst interface{}, name string) error {
-	return m.addChange("Drop constraint: %v %v", dst, name)
-}
-
-// DropIndex implements gorm.Migrator.
-func (m *MigrationTrapMigrator) DropIndex(dst interface{}, name string) error {
-	return m.addChange("Drop index: %v, %v", dst, name)
-}
-
-// DropTable implements gorm.Migrator.
-func (m *MigrationTrapMigrator) DropTable(dst ...interface{}) error {
-	return m.addChange("Drop table: %s", dstTypeNames(dst))
-}
-
-// DropView implements gorm.Migrator.
-func (m *MigrationTrapMigrator) DropView(name string) error {
-	return m.addChange("Drop view: %v", name)
-}
-
-// MigrateColumn implements gorm.Migrator.
-func (m *MigrationTrapMigrator) MigrateColumn(dst interface{}, field *schema.Field, columnType gorm.ColumnType) error {
-	return m.addChange("Migrate column: %T %v %v", dst, field, columnType)
-}
-
-// MigrateColumnUnique implements gorm.Migrator.
-func (m *MigrationTrapMigrator) MigrateColumnUnique(dst interface{}, field *schema.Field, columnType gorm.ColumnType) error {
-	return m.addChange("Migrate column unique: %v %v %v", dst, field, columnType)
-}
-
-// RenameColumn implements gorm.Migrator.
-func (m *MigrationTrapMigrator) RenameColumn(dst interface{}, oldName string, field string) error {
-	return m.addChange("Rename column: %v %v %v", dst, oldName, field)
-}
-
-// RenameIndex implements gorm.Migrator.
-func (m *MigrationTrapMigrator) RenameIndex(dst interface{}, oldName string, newName string) error {
-	return m.addChange("Rename index: %v %v %v", dst, oldName, newName)
-}
-
-// RenameTable implements gorm.Migrator.
-func (m *MigrationTrapMigrator) RenameTable(oldName interface{}, newName interface{}) error {
-	return m.addChange("Rename table: %v %v", oldName, newName)
-}
-
-func dstTypeNames(dst []any) string {
-	typeNames := make([]string, len(dst))
-	for index, element := range dst {
-		typeNames[index] = fmt.Sprintf("%T", element)
-	}
-	return strings.Join(typeNames, " ")
 }
