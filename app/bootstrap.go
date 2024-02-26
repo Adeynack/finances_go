@@ -42,8 +42,3 @@ func StartHttpServer() (ServerShutdownFunc, error) {
 }
 
 type ServerShutdownFunc func() error
-
-type ServerConfiguration struct {
-	AppEnv string
-	Port   int
-}

@@ -74,7 +74,7 @@ func determineDsn() (string, error) {
 func attemptAutoMigrate(dialector gorm.Dialector) error {
 	allowAutoMigrate := utils.ReadEnvBoolean("DB_AUTO_MIGRATE", false)
 
-	// ensure info logging is active so the "migration trap" to work
+	// ensure "info" logging is active so the "migration trap" to work
 	logger := logger.Default.LogMode(logger.Info)
 	var trapLogger *migrationTrapLogger
 	if !allowAutoMigrate {
@@ -82,16 +82,25 @@ func attemptAutoMigrate(dialector gorm.Dialector) error {
 		logger = trapLogger
 	}
 
-	// DryRun, unless allowAutoMigrate, in order to trap pending migrations without executing them.
-	db, err := gorm.Open(dialector, &gorm.Config{Logger: logger, DryRun: !allowAutoMigrate})
-	db.DryRun = false // Config.DryRun is not enough (see https://github.com/go-gorm/gorm/issues/5740#issuecomment-1582053954)
+	db, err := gorm.Open(dialector, &gorm.Config{Logger: logger})
 	if err != nil {
 		return fmt.Errorf("error opening database connection for auto-migrate: %v", err)
 	}
 
-	err = db.AutoMigrate(
-		model.User{},
-	)
+	// Call AutoMigrate on a transaction that can be rolled back (Gorm's DryRun sadly does not work as expected)
+	// if AutoMigrate is not allowed (running it anyways to collect un-migrated changes in the DB).
+	tx := db.Begin()
+	// TODO: Check if 'Session' is not the way to use 'DryRun': https://gorm.io/docs/session.html#DryRun
+	defer func() {
+		if allowAutoMigrate {
+			tx.Commit()
+		} else {
+			tx.Rollback()
+		}
+	}()
+
+	err = tx.AutoMigrate(listGormModels()...)
+
 	if err != nil {
 		return fmt.Errorf("error migrating database: %v", err)
 	}
@@ -100,4 +109,10 @@ func attemptAutoMigrate(dialector gorm.Dialector) error {
 	}
 
 	return nil
+}
+
+func listGormModels() []any {
+	return []any{
+		model.User{},
+	}
 }
