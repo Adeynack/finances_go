@@ -9,6 +9,7 @@ import (
 
 	"github.com/adeynack/finances/app/routes"
 	"github.com/adeynack/finances/db"
+	"github.com/adeynack/finances/model"
 	"github.com/labstack/echo/v4"
 )
 
@@ -17,7 +18,12 @@ func StartHttpServer() (ServerShutdownFunc, error) {
 	if err != nil {
 		return nil, err
 	}
-	_ = db // TODO
+	// TODO: Temporary. Just doing something with the DB to assert it works & logs properly.
+	_ = db
+	var user model.User
+	db.First(&user)
+	fmt.Printf("\nUser:\n%s\n\n", user.MustJSON())
+	// end TODO
 
 	// Create & initialize http server
 	e := echo.New()

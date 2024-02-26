@@ -18,7 +18,6 @@ func (*TrappedMigrationsError) Error() string {
 }
 
 type migrationTrapLogger struct {
-	BaseLogger        logger.Interface
 	PendingMigrations []string
 }
 

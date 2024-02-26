@@ -14,7 +14,7 @@ func (dt ISODateTime) String() string {
 	return time.Time(dt).Format(time.RFC3339Nano)
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler.
+// UnmarshalText implements encoding.TextUnmarshaler (used for JSON unmarshaling).
 func (dt *ISODateTime) UnmarshalText(text []byte) error {
 	parsed, err := time.Parse(time.RFC3339Nano, string(text))
 	if err != nil {
@@ -22,4 +22,9 @@ func (dt *ISODateTime) UnmarshalText(text []byte) error {
 	}
 	*dt = ISODateTime(parsed)
 	return nil
+}
+
+// UnmarshalText implements encoding.TextMarshaler (used for JSON marshaling).
+func (dt ISODateTime) MarshalText() (text []byte, err error) {
+	return []byte(dt.String()), nil
 }

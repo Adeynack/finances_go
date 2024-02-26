@@ -16,18 +16,18 @@ func Connect() (*gorm.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error establishing database connection parameters: %v", err)
 	}
-	dialector := postgres.Open(dsn)
-	if err = attemptAutoMigrate(dialector); err != nil {
-		return nil, err
-	}
 
-	// Create application's Gorm DB.
-	db, err := gorm.Open(dialector, &gorm.Config{
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error opening database connection: %v", err)
 	}
+
+	if err = attemptAutoMigrate(db); err != nil {
+		return nil, err
+	}
+
 	return db, nil
 }
 
@@ -71,41 +71,31 @@ func determineDsn() (string, error) {
 	return dsn, nil
 }
 
-func attemptAutoMigrate(dialector gorm.Dialector) error {
+func attemptAutoMigrate(db *gorm.DB) error {
 	allowAutoMigrate := utils.ReadEnvBoolean("DB_AUTO_MIGRATE", false)
-
-	// ensure "info" logging is active so the "migration trap" to work
-	logger := logger.Default.LogMode(logger.Info)
-	var trapLogger *migrationTrapLogger
-	if !allowAutoMigrate {
-		trapLogger = &migrationTrapLogger{BaseLogger: logger}
-		logger = trapLogger
-	}
-
-	db, err := gorm.Open(dialector, &gorm.Config{Logger: logger})
-	if err != nil {
-		return fmt.Errorf("error opening database connection for auto-migrate: %v", err)
-	}
-
-	// Call AutoMigrate on a transaction that can be rolled back (Gorm's DryRun sadly does not work as expected)
-	// if AutoMigrate is not allowed (running it anyways to collect un-migrated changes in the DB).
-	tx := db.Begin()
-	// TODO: Check if 'Session' is not the way to use 'DryRun': https://gorm.io/docs/session.html#DryRun
-	defer func() {
-		if allowAutoMigrate {
-			tx.Commit()
-		} else {
-			tx.Rollback()
+	if allowAutoMigrate {
+		if err := db.AutoMigrate(listGormModels()...); err != nil {
+			return fmt.Errorf("error auto-migrating: %v", err)
 		}
-	}()
-
-	err = tx.AutoMigrate(listGormModels()...)
-
-	if err != nil {
-		return fmt.Errorf("error migrating database: %v", err)
+		return nil
 	}
-	if trapLogger != nil && len(trapLogger.PendingMigrations) > 0 {
-		return &TrappedMigrationsError{PendingMigrations: trapLogger.PendingMigrations}
+
+	// Temporary silence the Gorm logger (avoiding seeind the pending migrations twice).
+	originalDbLogger := db.Logger
+	db.Logger = db.Logger.LogMode(logger.Warn)
+	defer func() { db.Logger = originalDbLogger }()
+
+	// Performing AutoMigrate inside of a DryRun session to only collects the
+	// migration's SQL (through the "trap logger") without performing it.
+	txLogger := &migrationTrapLogger{}
+	tx := db.Session(&gorm.Session{DryRun: true, Logger: txLogger})
+
+	err := tx.AutoMigrate(listGormModels()...)
+	if err != nil {
+		return fmt.Errorf("error auto-migrating in dry run: %v", err)
+	}
+	if len(txLogger.PendingMigrations) > 0 {
+		return &TrappedMigrationsError{PendingMigrations: txLogger.PendingMigrations}
 	}
 
 	return nil
