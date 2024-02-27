@@ -40,7 +40,9 @@
         "ms-azuretools.vscode-docker",
         "golang.go",
         "ms-vscode.makefile-tools",
-        "neonxp.gotools"
+        "neonxp.gotools",
+        "a-h.templ",
+        "adpyke.vscode-sql-formatter"
       ]
     }
   }
