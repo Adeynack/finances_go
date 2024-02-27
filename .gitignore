@@ -6,6 +6,10 @@
 *_templ.go
 *_templ.txt
 
+# Gorm generated code
+gen.go
+*.gen.go
+
 # overmind
 .overmind.sock
 

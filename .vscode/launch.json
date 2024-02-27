@@ -24,23 +24,34 @@
       "processId": "${command:pickGoProcess}"
     },
     {
-      "name": "Server (ENV dev)",
+      "name": "serve (ENV dev)",
       "type": "go",
       "request": "launch",
       "mode": "auto",
-      "program": "${workspaceFolder}/cmd/serve/main.go",
+      "program": "${workspaceFolder}/cmd/serve",
       "cwd": "${workspaceFolder}",
     },
     {
-      "name": "Server (ENV test)",
+      "name": "serve (ENV test)",
       "type": "go",
       "request": "launch",
       "mode": "auto",
-      "program": "${workspaceFolder}/cmd/serve/main.go",
+      "program": "${workspaceFolder}/cmd/serve",
       "cwd": "${workspaceFolder}",
       "env": {
         "APP_ENV": "test"
       }
+    },
+    {
+      "name": "ops db:codegen (DEV dev)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/ops",
+      "args": [
+        "db:codegen"
+      ],
+      "cwd": "${workspaceFolder}",
     },
   ]
 }

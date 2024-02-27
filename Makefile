@@ -19,9 +19,10 @@ build_for_debug:
 	go build -gcflags=all="-N -l" -o out/serve ./cmd/serve/*.go
 
 build_for_debug_watch:
-	air -build.bin=out/serve -build.cmd "make build_for_debug"
+# this watcher waits 1 second before building, to allow the generators to update Go files (eg: Templ, Gorm).
+	air -build.bin=out/serve -build.cmd="sleep 1 && make build_for_debug"
 
-# Generate
+# Generate Templ
 
 gen_templ:
 	templ generate
@@ -29,7 +30,13 @@ gen_templ:
 gen_templ_watch:
 	templ generate --watch
 
-gen: gen_templ
+# Generate Gorm Helpers
+
+gen_gorm:
+	go run cmd/ops/*.go db:codegen
+
+gen_gorm_watch:
+	air -build.bin=/bin/true -build.cmd="make gen_gorm" -build.include_dir="model" -build.exclude_dir="model/query" -build.include_ext="go"
 
 # Dev
 

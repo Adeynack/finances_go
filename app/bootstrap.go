@@ -8,21 +8,24 @@ import (
 	"time"
 
 	"github.com/adeynack/finances/app/routes"
-	"github.com/adeynack/finances/db"
-	"github.com/adeynack/finances/model"
+	"github.com/adeynack/finances/database"
+	"github.com/adeynack/finances/model/query"
+	"github.com/adeynack/finances/utils"
 	"github.com/labstack/echo/v4"
 )
 
 func StartHttpServer() (ServerShutdownFunc, error) {
-	db, err := db.Connect()
+	db, err := database.Connect()
 	if err != nil {
 		return nil, err
 	}
 	// TODO: Temporary. Just doing something with the DB to assert it works & logs properly.
 	_ = db
-	var user model.User
-	db.First(&user)
-	fmt.Printf("\nUser:\n%s\n\n", user.MustJSON())
+	// var user model.User
+	u := query.Use(db).User
+	user, _ := u.Where(u.DisplayName.Lower().Eq("abc")).First()
+	// db.Where(u.Email.Lower().Eq("a@b.c")).First(&user)
+	fmt.Printf("\nUser:\n%s\n\n", utils.MustJSON(user))
 	// end TODO
 
 	// Create & initialize http server

@@ -5,20 +5,17 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 
 	"github.com/adeynack/finances/app"
-	"github.com/adeynack/finances/db"
+	"github.com/adeynack/finances/app/appenv"
+	"github.com/adeynack/finances/database"
 )
 
 func main() {
-	app.InitAppEnvironment()
+	appenv.Init()
 
 	shutdownServer, err := app.StartHttpServer()
-	if trappedMigrationsError, ok := err.(*db.TrappedMigrationsError); ok {
-		// TODO: Move to future `cmd/tool` or `cmd/dev` dev-ops binary
-		log.Fatalf("Database migration is missing those elements to be in sync with the actual Gorm declared model:\n\n%s;\n\n", strings.Join(trappedMigrationsError.PendingMigrations, ";\n\n"))
-	} else if err != nil {
+	if err != nil && !database.FatalLogIfTrappedMigrationError(err) {
 		log.Fatalln(err)
 	}
 

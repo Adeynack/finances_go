@@ -1,7 +1,8 @@
-package db
+package database
 
 import (
 	"context"
+	"log"
 	"strings"
 	"time"
 
@@ -15,6 +16,15 @@ type TrappedMigrationsError struct {
 // Error implements error.
 func (*TrappedMigrationsError) Error() string {
 	return "pending migrations detected" // TODO: Instruct to use `cmd/tool` (still to be coded) to output the missing SQL migrations
+}
+
+func FatalLogIfTrappedMigrationError(err error) bool {
+	if trappedMigrationsError, ok := err.(*TrappedMigrationsError); ok {
+		// TODO: Move to future `cmd/tool` or `cmd/dev` dev-ops binary
+		log.Fatalf("Database migration is missing those elements to be in sync with the actual Gorm declared model:\n\n%s;\n\n", strings.Join(trappedMigrationsError.PendingMigrations, ";\n\n"))
+		return true
+	}
+	return false
 }
 
 type migrationTrapLogger struct {

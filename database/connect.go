@@ -1,4 +1,4 @@
-package db
+package database
 
 import (
 	"fmt"
@@ -74,23 +74,24 @@ func determineDsn() (string, error) {
 func attemptAutoMigrate(db *gorm.DB) error {
 	allowAutoMigrate := utils.ReadEnvBoolean("DB_AUTO_MIGRATE", false)
 	if allowAutoMigrate {
-		if err := db.AutoMigrate(listGormModels()...); err != nil {
+		if err := db.AutoMigrate(model.Models()...); err != nil {
 			return fmt.Errorf("error auto-migrating: %v", err)
 		}
 		return nil
 	}
 
-	// Temporary silence the Gorm logger (avoiding seeind the pending migrations twice).
+	// Temporary switch the Gorm logger (avoiding seeind the pending migrations twice).
 	originalDbLogger := db.Logger
-	db.Logger = db.Logger.LogMode(logger.Warn)
+	txLogger := &migrationTrapLogger{}
+	db.Logger = txLogger
 	defer func() { db.Logger = originalDbLogger }()
 
-	// Performing AutoMigrate inside of a DryRun session to only collects the
-	// migration's SQL (through the "trap logger") without performing it.
-	txLogger := &migrationTrapLogger{}
-	tx := db.Session(&gorm.Session{DryRun: true, Logger: txLogger})
+	// Performing AutoMigrate inside of an automatically rolled-back transaction.
+	// Sadly, Gorm's `DryRun` session does not work as expected (crashes sometimes with `dryrun not supported` or segfaults.
+	tx := db.Begin()
+	defer db.Rollback()
 
-	err := tx.AutoMigrate(listGormModels()...)
+	err := tx.AutoMigrate(model.Models()...)
 	if err != nil {
 		return fmt.Errorf("error auto-migrating in dry run: %v", err)
 	}
@@ -99,10 +100,4 @@ func attemptAutoMigrate(db *gorm.DB) error {
 	}
 
 	return nil
-}
-
-func listGormModels() []any {
-	return []any{
-		model.User{},
-	}
 }
