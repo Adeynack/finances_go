@@ -16,6 +16,9 @@ gen.go
 # macOS
 .DS_Store
 
+# Temporary test code
+cmd/fiddle
+
 # Misc
 out
 tmp

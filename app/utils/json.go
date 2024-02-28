@@ -15,3 +15,11 @@ func MustJSON(obj any) []byte {
 	}
 	return marshaled
 }
+
+func MustJSONPretty(obj any) []byte {
+	marshaled, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		panic(fmt.Sprintf("error mashaling model %T to JSON: %v", obj, err))
+	}
+	return marshaled
+}

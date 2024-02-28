@@ -80,6 +80,6 @@ db_drop:
 	echo "drop database if exists \"$(PGDBPREFIX)_test\"" | psql
 
 db_seed:
-	echo "TODO: Seed"
+	go run cmd/ops/*.go db:seed
 
 db_full_reset: db_drop db_create db_migrate db_seed

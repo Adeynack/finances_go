@@ -7,10 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/adeynack/finances/app/utils"
 	"github.com/adeynack/finances/controller/routes"
 	"github.com/adeynack/finances/model/database"
-	"github.com/adeynack/finances/model/query"
 	"github.com/labstack/echo/v4"
 )
 
@@ -21,12 +19,6 @@ func StartHttpServer() (ServerShutdownFunc, error) {
 	}
 	// TODO: Temporary. Just doing something with the DB to assert it works & logs properly.
 	_ = db
-	// var user model.User
-	u := query.Use(db).User
-	user, _ := u.Where(u.DisplayName.Lower().Eq("abc")).First()
-	// db.Where(u.Email.Lower().Eq("a@b.c")).First(&user)
-	fmt.Printf("\nUser:\n%s\n\n", utils.MustJSON(user))
-	// end TODO
 
 	// Create & initialize http server
 	e := echo.New()

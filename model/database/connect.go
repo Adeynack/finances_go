@@ -82,14 +82,14 @@ func attemptAutoMigrate(db *gorm.DB) error {
 
 	// Temporary switch the Gorm logger (avoiding seeind the pending migrations twice).
 	originalDbLogger := db.Logger
-	txLogger := &migrationTrapLogger{}
+	txLogger := &migrationTrapLogger{Interface: originalDbLogger}
 	db.Logger = txLogger
 	defer func() { db.Logger = originalDbLogger }()
 
 	// Performing AutoMigrate inside of an automatically rolled-back transaction.
 	// Sadly, Gorm's `DryRun` session does not work as expected (crashes sometimes with `dryrun not supported` or segfaults.
 	tx := db.Begin()
-	defer db.Rollback()
+	defer tx.Rollback()
 
 	err := tx.AutoMigrate(model.All()...)
 	if err != nil {

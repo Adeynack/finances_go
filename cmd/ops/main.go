@@ -13,6 +13,8 @@ func main() {
 	switch os.Args[1] {
 	case "db:codegen":
 		dbCodeGen()
+	case "db:seed":
+		dbSeed()
 	default:
 		log.Fatalf("unknown command %q", os.Args[1])
 	}

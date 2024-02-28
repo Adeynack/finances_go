@@ -9,12 +9,13 @@ import (
 
 type User struct {
 	BaseModel
-	Email             string `gorm:"not null;uniqueIndex" json:"email"`
-	DisplayName       string `gorm:"not null" json:"display_name"`
-	EncryptedPassword string `gorm:"not null" json:"-"`
+	Email             string  `gorm:"not null;uniqueIndex" json:"email"`
+	DisplayName       string  `gorm:"not null" json:"display_name"`
+	EncryptedPassword string  `gorm:"not null" json:"-"`
+	Books             []*Book `gorm:"foreignKey:owner_id" json:"books,omitempty"`
 }
 
-func (user *User) SetPassword(salt, password string) error {
+func (user *User) SetPassword(password, salt string) error {
 	saltedPassword, err := saltValue(salt, password)
 	if err != nil {
 		return fmt.Errorf("error salting user's password: %v", err)
