@@ -7,13 +7,10 @@ import (
 	"os/signal"
 
 	"github.com/adeynack/finances/app"
-	"github.com/adeynack/finances/app/appenv"
 	"github.com/adeynack/finances/database"
 )
 
 func main() {
-	appenv.Init()
-
 	shutdownServer, err := app.StartHttpServer()
 	if err != nil && !database.FatalLogIfTrappedMigrationError(err) {
 		log.Fatalln(err)

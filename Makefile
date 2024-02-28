@@ -22,6 +22,10 @@ build_for_debug_watch:
 # this watcher waits 1 second before building, to allow the generators to update Go files (eg: Templ, Gorm).
 	air -build.bin=out/serve -build.cmd="sleep 1 && make build_for_debug"
 
+# Generate
+
+gen: gen_templ gen_gorm
+
 # Generate Templ
 
 gen_templ:
