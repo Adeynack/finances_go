@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/adeynack/finances/app/utils"
 	"github.com/adeynack/finances/model"
-	"github.com/adeynack/finances/utils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -74,7 +74,7 @@ func determineDsn() (string, error) {
 func attemptAutoMigrate(db *gorm.DB) error {
 	allowAutoMigrate := utils.ReadEnvBoolean("DB_AUTO_MIGRATE", false)
 	if allowAutoMigrate {
-		if err := db.AutoMigrate(model.Models()...); err != nil {
+		if err := db.AutoMigrate(model.All()...); err != nil {
 			return fmt.Errorf("error auto-migrating: %v", err)
 		}
 		return nil
@@ -91,7 +91,7 @@ func attemptAutoMigrate(db *gorm.DB) error {
 	tx := db.Begin()
 	defer db.Rollback()
 
-	err := tx.AutoMigrate(model.Models()...)
+	err := tx.AutoMigrate(model.All()...)
 	if err != nil {
 		return fmt.Errorf("error auto-migrating in dry run: %v", err)
 	}

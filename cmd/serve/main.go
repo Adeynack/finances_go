@@ -7,7 +7,7 @@ import (
 	"os/signal"
 
 	"github.com/adeynack/finances/app"
-	"github.com/adeynack/finances/database"
+	"github.com/adeynack/finances/model/database"
 )
 
 func main() {

@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"github.com/adeynack/finances/handlers"
+	"github.com/adeynack/finances/controller"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -11,5 +11,5 @@ func Draw(e *echo.Echo) {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Static("/static"))
 
-	e.GET(PathRoot, handlers.Root)
+	e.GET(PathRoot, controller.Root)
 }

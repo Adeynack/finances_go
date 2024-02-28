@@ -2,5 +2,5 @@
 export PGDB=${PGDB:-finances_dev}
 export GOOSE_DRIVER=postgres
 export GOOSE_DBSTRING="postgres://$PGUSER:@$PGHOST:$PGPORT/$PGDB?sslmode=disable"
-export GOOSE_MIGRATION_DIR=db/migrations
+export GOOSE_MIGRATION_DIR=model/database/migrations
 goose -allow-missing $@

@@ -7,10 +7,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/adeynack/finances/app/routes"
-	"github.com/adeynack/finances/database"
+	"github.com/adeynack/finances/app/utils"
+	"github.com/adeynack/finances/controller/routes"
+	"github.com/adeynack/finances/model/database"
 	"github.com/adeynack/finances/model/query"
-	"github.com/adeynack/finances/utils"
 	"github.com/labstack/echo/v4"
 )
 

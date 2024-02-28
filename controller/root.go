@@ -1,9 +1,9 @@
-package handlers
+package controller
 
 import (
 	"net/http"
 
-	"github.com/adeynack/finances/templates/layouts"
+	"github.com/adeynack/finances/view/templates/layouts"
 	"github.com/labstack/echo/v4"
 )
 

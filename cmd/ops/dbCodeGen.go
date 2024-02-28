@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/adeynack/finances/database"
 	"github.com/adeynack/finances/model"
+	"github.com/adeynack/finances/model/database"
 	"gorm.io/gen"
 )
 
@@ -15,9 +15,9 @@ func dbCodeGen() {
 	}
 	g := gen.NewGenerator(gen.Config{
 		OutPath: "./model/query",
-		Mode:    gen.WithoutContext, // | gen.WithQueryInterface | gen.WithDefaultQuery,
+		Mode:    gen.WithoutContext,
 	})
 	g.UseDB(db)
-	g.ApplyBasic(model.Models()...)
+	g.ApplyBasic(model.All()...)
 	g.Execute()
 }
