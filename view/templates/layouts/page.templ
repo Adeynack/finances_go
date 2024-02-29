@@ -1,6 +1,9 @@
 package layouts
 
-templ Page(message string) {
+import "github.com/adeynack/finances/model"
+import "github.com/adeynack/finances/view/templates/userComponents"
+
+templ Page(message string,users []*model.User) {
 	<html>
 		<head>
 			<meta name="color-scheme" content="light dark"/>
@@ -8,6 +11,7 @@ templ Page(message string) {
 		</head>
 		<body>
 			<div>{ message }</div>
+			@userComponents.UsersWithBooks(users)
 		</body>
 	</html>
 }

@@ -1,0 +1,23 @@
+package userComponents
+
+import "github.com/adeynack/finances/model"
+
+templ UsersWithBooks(users []*model.User) {
+	<div>
+		<h2>"Users with their books"</h2>
+		<ul>
+			for _, user := range users {
+				<li>
+					{ user.DisplayName } ({ user.Email })
+					<ul>
+						for _, book := range user.Books {
+							<li>
+								{ book.Name }
+							</li>
+						}
+					</ul>
+				</li>
+			}
+		</ul>
+	</div>
+}

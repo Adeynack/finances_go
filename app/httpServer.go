@@ -17,13 +17,11 @@ func StartHttpServer() (ServerShutdownFunc, error) {
 	if err != nil {
 		return nil, err
 	}
-	// TODO: Temporary. Just doing something with the DB to assert it works & logs properly.
-	_ = db
 
-	// Create & initialize http server
+	// Create & initialize HTTP server
 	e := echo.New()
 	e.HideBanner = true
-	routes.Draw(e)
+	routes.Draw(e, db)
 
 	// Start the server in the background
 	go func() {
