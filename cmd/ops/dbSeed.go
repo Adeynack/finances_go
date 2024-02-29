@@ -18,9 +18,9 @@ func dbSeed() {
 		log.Fatalln(err)
 	}
 
-	serverSalt := os.Getenv("SERVER_SALT")
+	serverSecret := os.Getenv("SERVER_SECRET")
 	dbTruncateAll(db)
-	users := dbSeedCreateUsers(db, serverSalt)
+	users := dbSeedCreateUsers(db, serverSecret)
 	dbSeedCreateBooks(db, users)
 }
 
@@ -34,12 +34,12 @@ func dbTruncateAll(db *gorm.DB) {
 	}
 }
 
-func dbSeedCreateUsers(db *gorm.DB, salt string) map[string]*model.User {
+func dbSeedCreateUsers(db *gorm.DB, secret string) map[string]*model.User {
 	users := make(map[string]*model.User)
 	user := query.Use(db).User
 
 	add := func(key string, u *model.User) {
-		u.SetPassword(u.EncryptedPassword, salt)
+		u.SetPassword(u.EncryptedPassword, secret)
 		users[key] = u
 	}
 

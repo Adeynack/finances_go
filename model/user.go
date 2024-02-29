@@ -15,8 +15,8 @@ type User struct {
 	Books             []*Book `gorm:"foreignKey:owner_id" json:"books,omitempty"`
 }
 
-func (user *User) SetPassword(password, salt string) error {
-	saltedPassword, err := saltValue(salt, password)
+func (user *User) SetPassword(password, secret string) error {
+	saltedPassword, err := saltValue(secret, password)
 	if err != nil {
 		return fmt.Errorf("error salting user's password: %v", err)
 	}
@@ -24,16 +24,16 @@ func (user *User) SetPassword(password, salt string) error {
 	return nil
 }
 
-func (user *User) CheckPassword(salt, password string) (bool, error) {
-	salted, err := saltValue(salt, password)
+func (user *User) CheckPassword(secret, password string) (bool, error) {
+	salted, err := saltValue(secret, password)
 	if err != nil {
 		return false, fmt.Errorf("error salting password to check: %v", err)
 	}
 	return hmac.Equal(salted, []byte(user.EncryptedPassword)), nil
 }
 
-func saltValue(salt, value string) ([]byte, error) {
-	mac := hmac.New(md5.New, []byte(salt))
+func saltValue(secret, value string) ([]byte, error) {
+	mac := hmac.New(md5.New, []byte(secret))
 	_, err := mac.Write([]byte(value))
 	if err != nil {
 		return nil, fmt.Errorf("error salting value: %v", err)
