@@ -37,7 +37,7 @@ func Init() {
 		Env = "dev" // defaulting to development
 		err := os.Setenv(EnvAppEnv, Env)
 		if err != nil {
-			panic(fmt.Errorf("unable to set ENV %q: %v", EnvAppEnv, err))
+			panic(fmt.Errorf("unable to set ENV %q: %w", EnvAppEnv, err))
 		}
 	}
 
@@ -60,6 +60,6 @@ func appendFileIfExist(files []string, path string) []string {
 	} else if errors.Is(err, os.ErrNotExist) {
 		return files
 	} else {
-		panic(fmt.Errorf("error getting file stat for %q: %v", path, err))
+		panic(fmt.Errorf("error getting file stat for %q: %w", path, err))
 	}
 }

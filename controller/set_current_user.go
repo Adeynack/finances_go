@@ -27,7 +27,7 @@ func SetCurrentUser() echo.MiddlewareFunc {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					// noop: User simply does not exists
 				} else if err != nil {
-					return fmt.Errorf("error loading current user: %v", err)
+					return fmt.Errorf("error loading current user: %w", err)
 				}
 				c.Set(CtxCurrentUser, currentUser)
 			}

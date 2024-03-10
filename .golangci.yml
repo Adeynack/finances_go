@@ -1,0 +1,16 @@
+run:
+  skip-files:
+    - ".*_templ.go$"
+    - "gen.go"
+    - ".*.gen.go$"
+
+linters: # https://golangci-lint.run/usage/linters/
+  enable:
+    - errorlint
+    - exhaustive
+    # Those with potential:
+    # - exhaustruct (https://github.com/GaijinEntertainment/go-exhaustruct)
+    # - gochecksumtype (https://github.com/alecthomas/go-check-sumtype)
+    # - gocritic (https://github.com/go-critic/go-critic)
+    # - makezero (https://github.com/ashanbrown/makezero)
+    # ...

@@ -18,7 +18,7 @@ func (dt ISODateTime) String() string {
 func (dt *ISODateTime) UnmarshalText(text []byte) error {
 	parsed, err := time.Parse(time.RFC3339Nano, string(text))
 	if err != nil {
-		return fmt.Errorf("error parsing ISO8601DateTime: %v", err)
+		return fmt.Errorf("error parsing ISO8601DateTime: %w", err)
 	}
 	*dt = ISODateTime(parsed)
 	return nil

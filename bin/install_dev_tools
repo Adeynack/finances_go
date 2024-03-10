@@ -30,3 +30,8 @@ if ! command -v dotenv &> /dev/null
 then
   npm install -g dotenv-cli
 fi
+
+if ! command -v golangci-lint &> /dev/null
+then
+  go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.56.2
+fi

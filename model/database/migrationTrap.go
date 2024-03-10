@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"errors"
 	"log"
 	"strings"
 	"time"
@@ -18,12 +19,18 @@ func (*TrappedMigrationsError) Error() string {
 	return "pending migrations detected" // TODO: Instruct to use `cmd/tool` (still to be coded) to output the missing SQL migrations
 }
 
+// FatalLogIfTrappedMigrationError will call `log.Fatal` if the received err is
+// a TrappedMigrationsError, listing the migrations SQL command that are missing
+// to be in sync with the declared Gorm structure.
+//
+// It returns `true` if it failed; otherwise, `false` if it did not fail.
 func FatalLogIfTrappedMigrationError(err error) bool {
-	if trappedMigrationsError, ok := err.(*TrappedMigrationsError); ok {
-		// TODO: Move to future `cmd/tool` or `cmd/dev` dev-ops binary
+	var trappedMigrationsError *TrappedMigrationsError
+	if errors.As(err, &trappedMigrationsError) {
 		log.Fatalf("Database migration is missing those elements to be in sync with the actual Gorm declared model:\n\n%s;\n\n", strings.Join(trappedMigrationsError.PendingMigrations, ";\n\n"))
 		return true
 	}
+
 	return false
 }
 

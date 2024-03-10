@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -31,8 +32,8 @@ func StartHttpServer() (ServerShutdownFunc, error) {
 	// Start the server in the background
 	go func() {
 		address := fmt.Sprintf("localhost:%s", os.Getenv("PORT"))
-		if err := e.Start(address); err != nil && err != http.ErrServerClosed {
-			e.Logger.Fatalf("error shutting down server: %s", err)
+		if err := e.Start(address); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			e.Logger.Fatalf("error shutting down server: %w", err)
 		}
 	}()
 

@@ -38,7 +38,7 @@ func useSecret(c echo.Context) string {
 func useSession(c echo.Context) *sessions.Session {
 	session, err := session.Get(CtxSessionName, c)
 	if err != nil {
-		panic(fmt.Errorf("error getting session: %v", err))
+		panic(fmt.Errorf("error getting session: %w", err))
 	}
 	return session
 }

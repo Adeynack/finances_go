@@ -29,20 +29,22 @@ func CreateSession(c echo.Context) error {
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return invalidLogin(c, email)
 	} else if err != nil {
-		return fmt.Errorf("error loading user: %v", err)
+		return fmt.Errorf("error loading user: %w", err)
 	}
 
 	password := c.FormValue("password")
 	secret := useSecret(c)
 	if checked, err := user.CheckPassword(secret, password); err != nil {
-		return fmt.Errorf("error checking user's password: %v", err)
+		return fmt.Errorf("error checking user's password: %w", err)
 	} else if !checked {
 		return invalidLogin(c, email)
 	}
 
 	session := useSession(c)
 	session.Values[SessionCurrentUserId] = user.ID
-	session.Save(c.Request(), c.Response())
+	if err := session.Save(c.Request(), c.Response()); err != nil {
+		return fmt.Errorf("error saving session: %w", err)
+	}
 
 	return c.Redirect(http.StatusFound, routes.R.Session.Show.Path)
 }
@@ -57,7 +59,9 @@ func invalidLogin(c echo.Context, email string) error {
 func DeleteSession(c echo.Context) error {
 	session := useSession(c)
 	delete(session.Values, SessionCurrentUserId)
-	session.Save(c.Request(), c.Response())
+	if err := session.Save(c.Request(), c.Response()); err != nil {
+		return fmt.Errorf("error saving session: %w", err)
+	}
 
 	return c.Redirect(http.StatusSeeOther, routes.R.Session.Show.Path)
 }

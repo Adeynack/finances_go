@@ -67,7 +67,9 @@ func dbSeedCreateUsers(db *gorm.DB, secret string) map[string]*model.User {
 		},
 	}
 	for fixtureName, user := range userFixtures {
-		user.SetPassword(user.EncryptedPassword, secret)
+		if err := user.SetPassword(user.EncryptedPassword, secret); err != nil {
+			log.Fatalf("error setting user's password: %v", err)
+		}
 		err := u.Create(user)
 		if err != nil {
 			log.Fatalf("error seeding user %q: %v", fixtureName, err)

@@ -29,14 +29,14 @@ func init() {
 func Connect() (*gorm.DB, error) {
 	dsn, err := determineDsn()
 	if err != nil {
-		return nil, fmt.Errorf("error establishing database connection parameters: %v", err)
+		return nil, fmt.Errorf("error establishing database connection parameters: %w", err)
 	}
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error opening database connection: %v", err)
+		return nil, fmt.Errorf("error opening database connection: %w", err)
 	}
 
 	if err = attemptAutoMigrate(db); err != nil {
@@ -90,7 +90,7 @@ func attemptAutoMigrate(db *gorm.DB) error {
 	allowAutoMigrate := utils.ReadEnvBoolean(EnvDbAutoMigrate, false)
 	if allowAutoMigrate {
 		if err := db.AutoMigrate(model.All()...); err != nil {
-			return fmt.Errorf("error auto-migrating: %v", err)
+			return fmt.Errorf("error auto-migrating: %w", err)
 		}
 		return nil
 	}
@@ -108,7 +108,7 @@ func attemptAutoMigrate(db *gorm.DB) error {
 
 	err := tx.AutoMigrate(model.All()...)
 	if err != nil {
-		return fmt.Errorf("error auto-migrating in dry run: %v", err)
+		return fmt.Errorf("error auto-migrating in dry run: %w", err)
 	}
 	if len(txLogger.PendingMigrations) > 0 {
 		return &TrappedMigrationsError{PendingMigrations: txLogger.PendingMigrations}

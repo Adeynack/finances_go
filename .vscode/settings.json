@@ -1,3 +1,5 @@
 {
   "go.toolsManagement.autoUpdate": true,
+  "go.lintTool": "golangci-lint",
+  "go.lintFlags": []
 }

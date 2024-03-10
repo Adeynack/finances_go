@@ -61,8 +61,7 @@ test:
 ct: clean test
 
 lint: build
-	go vet ./...
-	bin/staticcheck ./...
+	golangci-lint run
 
 check: clean gen build lint test
 
@@ -90,6 +89,3 @@ psql:
 	dotenv -c ${APP_ENV} -- psql
 
 db_full_reset: db_drop db_create db_migrate db_seed
-
-test:
-	dotenv -c dev -- env
