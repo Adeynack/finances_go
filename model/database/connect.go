@@ -4,12 +4,27 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/adeynack/finances/app/appenv"
 	"github.com/adeynack/finances/app/utils"
 	"github.com/adeynack/finances/model"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+const (
+	EnvDatabaseUrl     = "DATABASE_URL"
+	EnvDatabaseHost    = "PGHOST"
+	EnvDatabaseUser    = "PGUSER"
+	EnvDatabaseName    = "PGDATABASE"
+	EnvDatabasePort    = "PGPORT"
+	EnvDatabaseSSLMode = "PGSSLMODE"
+	EnvDbAutoMigrate   = "DB_AUTO_MIGRATE"
+)
+
+func init() {
+	appenv.Init()
+}
 
 func Connect() (*gorm.DB, error) {
 	dsn, err := determineDsn()
@@ -34,36 +49,36 @@ func Connect() (*gorm.DB, error) {
 func errExpectedEnv(expectedEnv string) error {
 	return fmt.Errorf(
 		"in application environment %q, expected environment variable %q to be defined",
-		os.Getenv("APP_ENV"),
+		appenv.Env,
 		expectedEnv,
 	)
 }
 
 func determineDsn() (string, error) {
 	// When DATABASE_URL is set, use it as-is.
-	databaseUrl := os.Getenv("DATABASE_URL")
+	databaseUrl := os.Getenv(EnvDatabaseUrl)
 	if databaseUrl != "" {
 		return databaseUrl, nil
 	}
 
 	// Otherwise, build the connection string from individual ENV values.
-	pgHost := os.Getenv("PGHOST")
+	pgHost := os.Getenv(EnvDatabaseHost)
 	if pgHost == "" {
-		return "", errExpectedEnv("PGHOST")
+		return "", errExpectedEnv(EnvDatabaseHost)
 	}
-	pgUser := os.Getenv("PGUSER")
+	pgUser := os.Getenv(EnvDatabaseUser)
 	if pgUser == "" {
-		return "", errExpectedEnv("PGUSER")
+		return "", errExpectedEnv(EnvDatabaseUser)
 	}
-	pgDatabaseName := os.Getenv("PGDB")
+	pgDatabaseName := os.Getenv(EnvDatabaseName)
 	if pgDatabaseName == "" {
-		return "", errExpectedEnv("PGDB")
+		return "", errExpectedEnv(EnvDatabaseName)
 	}
-	pgPort := os.Getenv("PGPORT")
+	pgPort := os.Getenv(EnvDatabasePort)
 	if pgPort == "" {
-		return "", errExpectedEnv("PGPORT")
+		return "", errExpectedEnv(EnvDatabasePort)
 	}
-	pgSSLMode := os.Getenv("PGSSLMODE")
+	pgSSLMode := os.Getenv(EnvDatabaseSSLMode)
 	if pgSSLMode == "" {
 		pgSSLMode = "prefer" // default (https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-SSLMODE)
 	}
@@ -72,7 +87,7 @@ func determineDsn() (string, error) {
 }
 
 func attemptAutoMigrate(db *gorm.DB) error {
-	allowAutoMigrate := utils.ReadEnvBoolean("DB_AUTO_MIGRATE", false)
+	allowAutoMigrate := utils.ReadEnvBoolean(EnvDbAutoMigrate, false)
 	if allowAutoMigrate {
 		if err := db.AutoMigrate(model.All()...); err != nil {
 			return fmt.Errorf("error auto-migrating: %v", err)

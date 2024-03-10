@@ -1,0 +1,18 @@
+package view
+
+import "github.com/adeynack/finances/model"
+import "github.com/adeynack/finances/view/templates/layouts"
+
+templ ShowSession(currentUser *model.User, sessionDeletePath string) {
+	@layouts.Page() {
+		<div>
+			Logged In as { currentUser.DisplayName }
+		</div>
+		<div>
+			Identified by E-Mail { currentUser.Email }
+		</div>
+		<div>
+			<button hx-delete={ sessionDeletePath } hx-target="body">Log out</button>
+		</div>
+	}
+}

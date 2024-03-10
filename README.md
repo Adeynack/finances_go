@@ -2,6 +2,10 @@
 
 ## How to develop?
 
+### Not using the devcontainer?
+
+Run `bin/install_dev_tools` in order to install needed tools to your systems. Those are automatically installed in the devcontainer.
+
 ### Start development process
 
 ```bash

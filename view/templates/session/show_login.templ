@@ -1,0 +1,47 @@
+package view
+
+import "github.com/adeynack/finances/view/templates/layouts"
+
+type ShowLoginOptions struct {
+	InvalidLogin bool
+	Email        string
+}
+
+templ ShowLogin(sessionCreateRoute string, options ShowLoginOptions) {
+	@layouts.Page() {
+		<h1>Login</h1>
+		if options.InvalidLogin {
+			<div>
+				Invalid login information.
+			</div>
+		}
+		<form action={ templ.SafeURL(sessionCreateRoute) } method="post">
+			<table>
+				<tr>
+					<td>
+						<label for="email">Email</label>
+					</td>
+					<td>
+						<input name="email" value={ options.Email }/>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<label for="password">Password</label>
+					</td>
+					<td>
+						<input name="password" type="password"/>
+					</td>
+				</tr>
+				<tr>
+					<tr>
+						<td></td>
+						<td>
+							<input type="submit"/>
+						</td>
+					</tr>
+				</tr>
+			</table>
+		</form>
+	}
+}

@@ -7,7 +7,7 @@
     "LOCAL_WORKSPACE_FOLDER_BASENAME": "${localWorkspaceFolderBasename}"
   },
   "remoteUser": "root",
-  // "postCreateCommand": "make gen build",
+  "postCreateCommand": "bin/install_dev_tools",
   // "forwardPorts": [
   //   30301,
   //   30302

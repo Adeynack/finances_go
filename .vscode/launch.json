@@ -43,22 +43,12 @@
       }
     },
     {
-      "name": "ops db:codegen (DEV dev)",
-      "type": "go",
-      "request": "launch",
-      "mode": "auto",
-      "program": "${workspaceFolder}/cmd/ops",
-      "args": [
-        "db:codegen"
-      ],
-      "cwd": "${workspaceFolder}",
-    },
-    {
       "name": "Debug file",
       "type": "go",
       "request": "launch",
       "mode": "debug",
-      "program": "${file}"
+      "program": "${file}",
+      "cwd": "${workspaceFolder}",
     }
   ]
 }
