@@ -1,17 +1,18 @@
 package layouts
 
-import "github.com/adeynack/finances/model"
-import "github.com/adeynack/finances/view/templates/userComponents"
-
-templ Page(message string,users []*model.User) {
+templ Page() {
 	<html>
 		<head>
 			<meta name="color-scheme" content="light dark"/>
 			<title>Finances</title>
+			<script src="/js/htmx.min.js"></script>
 		</head>
 		<body>
-			<div>{ message }</div>
-			@userComponents.UsersWithBooks(users)
+			<div>
+				FINANCES
+			</div>
+			<hr/>
+			{ children... }
 		</body>
 	</html>
 }

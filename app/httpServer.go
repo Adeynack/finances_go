@@ -7,10 +7,15 @@ import (
 	"os"
 	"time"
 
-	"github.com/adeynack/finances/controller/routes"
+	"github.com/adeynack/finances/app/appenv"
+	"github.com/adeynack/finances/controller"
 	"github.com/adeynack/finances/model/database"
 	"github.com/labstack/echo/v4"
 )
+
+func init() {
+	appenv.Init()
+}
 
 func StartHttpServer() (ServerShutdownFunc, error) {
 	db, err := database.Connect()
@@ -21,7 +26,7 @@ func StartHttpServer() (ServerShutdownFunc, error) {
 	// Create & initialize HTTP server
 	e := echo.New()
 	e.HideBanner = true
-	routes.Draw(e, db)
+	controller.DrawRoutes(e, db, os.Getenv(appenv.EnvServerSecret))
 
 	// Start the server in the background
 	go func() {

@@ -1,0 +1,32 @@
+#!/bin/bash
+# Install tools needed by the project's development operations
+
+if ! command -v templ &> /dev/null
+then
+  go install -v github.com/a-h/templ/cmd/templ@latest
+fi
+
+if ! command -v overmind &> /dev/null
+then
+  go install -v github.com/DarthSim/overmind@latest
+fi
+
+if ! command -v air &> /dev/null
+then
+  go install -v github.com/cosmtrek/air@v1.50.0
+fi
+
+if ! command -v staticcheck &> /dev/null
+then
+  go install -v honnef.co/go/tools/cmd/staticcheck@latest
+fi
+
+if ! command -v goose &> /dev/null
+then
+  go install -v -tags='no_clickhouse no_duckdb no_mssql no_mysql no_sqlite3 no_libsql no_vertica no_ydb' github.com/pressly/goose/v3/cmd/goose@latest
+fi
+
+if ! command -v dotenv &> /dev/null
+then
+  npm install -g dotenv-cli
+fi
