@@ -1,6 +1,7 @@
 package view
 
 import "github.com/adeynack/finances/view/templates/layouts"
+import "github.com/adeynack/finances/view/templates/components"
 
 type ShowLoginOptions struct {
 	InvalidLogin bool
@@ -37,7 +38,7 @@ templ ShowLogin(sessionCreateRoute string, options ShowLoginOptions) {
 					<tr>
 						<td></td>
 						<td>
-							<input type="submit"/>
+							@components.Button(components.ButtonProps{Label: "Log In", Type: "submit"})
 						</td>
 					</tr>
 				</tr>

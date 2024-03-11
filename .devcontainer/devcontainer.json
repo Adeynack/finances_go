@@ -42,7 +42,8 @@
         "ms-vscode.makefile-tools",
         "neonxp.gotools",
         "a-h.templ",
-        "adpyke.vscode-sql-formatter"
+        "adpyke.vscode-sql-formatter",
+        "bradlc.vscode-tailwindcss"
       ]
     }
   }

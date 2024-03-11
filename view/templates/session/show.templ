@@ -2,6 +2,7 @@ package view
 
 import "github.com/adeynack/finances/model"
 import "github.com/adeynack/finances/view/templates/layouts"
+import "github.com/adeynack/finances/view/templates/components"
 
 templ ShowSession(currentUser *model.User, sessionDeletePath string) {
 	@layouts.Page() {
@@ -12,7 +13,7 @@ templ ShowSession(currentUser *model.User, sessionDeletePath string) {
 			Identified by E-Mail { currentUser.Email }
 		</div>
 		<div>
-			<button hx-delete={ sessionDeletePath } hx-target="body">Log out</button>
+			@components.Button(components.ButtonProps{Label: "Log Out", Attributes: templ.Attributes{"hx-delete": sessionDeletePath, "hx-target": "body"}})
 		</div>
 	}
 }

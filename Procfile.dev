@@ -1,3 +1,4 @@
 serve: sleep 2 && make build_for_debug_watch
 templ: make gen_templ_watch
 gorm: make gen_gorm_watch
+css: make gen_css_watch

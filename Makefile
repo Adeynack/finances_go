@@ -41,6 +41,16 @@ gen_gorm:
 gen_gorm_watch:
 	dotenv -c ${APP_ENV} -- air -build.bin=/bin/true -build.cmd="make gen_gorm" -build.include_dir="model" -build.exclude_dir="model/query" -build.include_ext="go"
 
+# Generate Styles
+gen_css:
+	npx tailwindcss -i ./view/css/tailwind.css -o ./view/static/css/styles.css
+
+gen_css_watch:
+	npx tailwindcss -i ./view/css/tailwind.css -o ./view/static/css/styles.css --watch
+
+gen_css_prod:
+	npx tailwindcss -i ./view/css/tailwind.css -o ./view/static/css/styles.css --minify
+
 # Dev
 
 dev:

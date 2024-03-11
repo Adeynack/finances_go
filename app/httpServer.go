@@ -58,7 +58,7 @@ type ServerShutdownFunc func() error
 func extractServerSecretOrFail() string {
 	secret := strings.Trim(os.Getenv(appenv.EnvServerSecret), " ")
 	if secret == "" {
-		log.Fatalln("Server secret must be set. TIP: If you see this, either set ENV %q on your server, or specify it in `.env.local` if developping.", appenv.EnvServerSecret)
+		log.Fatalf("Server secret must be set. TIP: If you see this, either set ENV %q on your server, or specify it in `.env.local` if developping.", appenv.EnvServerSecret)
 	}
 	return secret
 }
