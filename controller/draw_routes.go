@@ -8,10 +8,9 @@ import (
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"gorm.io/gorm"
 )
 
-func DrawRoutes(e *echo.Echo, db *gorm.DB, serverSecret string) {
+func DrawRoutes(e *echo.Echo, appContext *AppContext) {
 	e.Use(
 		middleware.RequestID(),
 		middleware.Logger(),
@@ -20,13 +19,13 @@ func DrawRoutes(e *echo.Echo, db *gorm.DB, serverSecret string) {
 
 	routes.R.Root = e.GET("", Root)
 
-	drawSessionRoutes(e.Group(""), db, serverSecret)
+	drawSessionRoutes(e.Group(""), appContext)
 }
 
-func drawSessionRoutes(e *echo.Group, db *gorm.DB, serverSecret string) {
+func drawSessionRoutes(e *echo.Group, appContext *AppContext) {
 	e.Use(
-		SetRequestContext(db, serverSecret),
-		session.Middleware(sessions.NewCookieStore([]byte(serverSecret))),
+		SetAppContext(appContext),
+		session.Middleware(sessions.NewCookieStore([]byte(appContext.ServerSecret))),
 		SetCurrentUser(),
 	)
 

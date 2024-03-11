@@ -19,22 +19,39 @@ import (
 // it's detected and fixed during development and testing. It's not on the
 // production's hot-path, and therefore acceptable to lightened the call-site
 // by skipping error testing.
-func useValueOf[T any](c echo.Context, key string) T {
-	value, ok := c.Get(key).(T)
+func useValueOf[T comparable](c echo.Context, key string, acceptNil bool) T {
+	var defaultValue T
+	rawValue := c.Get(key)
+	if rawValue == nil {
+		if acceptNil {
+			return defaultValue
+		} else {
+			panic(fmt.Errorf("extracting %q from context: value not present", key))
+		}
+	}
+	value, ok := rawValue.(T)
 	if !ok {
 		panic(fmt.Errorf("extracting %q from context: got %#v", key, value))
 	}
 	return value
 }
 
+// useAppContext returns the application's context object.
+func useAppContext(c echo.Context) *AppContext {
+	return useValueOf[*AppContext](c, CtxAppContext, false)
+}
+
+// useDb returns a GORM DB object in the context of the current requesst.
 func useDb(c echo.Context) *gorm.DB {
-	return useValueOf[*gorm.DB](c, CtxRequestDb)
+	return useAppContext(c).DB.WithContext(c.Request().Context())
 }
 
+// useSecret returns the server's secret (eg: for encrypting users passwords).
 func useSecret(c echo.Context) string {
-	return useValueOf[string](c, CtxServerSecret)
+	return useAppContext(c).ServerSecret
 }
 
+// useSession returns the actual session of the request.
 func useSession(c echo.Context) *sessions.Session {
 	session, err := session.Get(CtxSessionName, c)
 	if err != nil {
@@ -43,14 +60,7 @@ func useSession(c echo.Context) *sessions.Session {
 	return session
 }
 
+// useCurrentUser returns the currently authenticated user.
 func useCurrentUser(c echo.Context) *model.User {
-	value := c.Get(CtxCurrentUser)
-	if value == nil {
-		return nil
-	}
-	currentUser, ok := value.(*model.User)
-	if !ok {
-		panic(fmt.Errorf("extracting %q from context: got %#v", CtxCurrentUser, value))
-	}
-	return currentUser
+	return useValueOf[*model.User](c, CtxCurrentUser, true)
 }

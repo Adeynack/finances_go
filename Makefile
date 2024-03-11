@@ -1,6 +1,5 @@
 APP_ENV ?= dev
 PORT ?= 40001
-PGDBPREFIX ?= finances
 
 # Start development server
 
