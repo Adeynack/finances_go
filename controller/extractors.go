@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/adeynack/finances/model"
+	"github.com/adeynack/finances/model/query"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
@@ -44,6 +45,10 @@ func useAppContext(c echo.Context) *AppContext {
 // useDb returns a GORM DB object in the context of the current requesst.
 func useDb(c echo.Context) *gorm.DB {
 	return useAppContext(c).DB.WithContext(c.Request().Context())
+}
+
+func useQuery(c echo.Context) *query.Query {
+	return query.Use(useDb(c))
 }
 
 // useSecret returns the server's secret (eg: for encrypting users passwords).

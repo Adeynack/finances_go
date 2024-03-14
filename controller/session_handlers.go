@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/adeynack/finances/controller/routes"
-	"github.com/adeynack/finances/model/query"
 	view "github.com/adeynack/finances/view/templates/session"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -21,10 +20,17 @@ func ShowSession(c echo.Context) error {
 }
 
 func CreateSession(c echo.Context) error {
-	db := useDb(c)
-	u := query.Use(db).User
+	q := useQuery(c)
+	u := q.User
+	// todo: next step is to isolate database calls to a `store` layer, ideally
+	// 		 a 'facade' interface container all queries and mutations.
+	// 	store := useStore(c)
+	//  user, err := store.FindUserByEmail(email)
 
 	email := c.FormValue("email")
+	if email == "" {
+		return invalidLogin(c, email)
+	}
 	user, err := u.Where(u.Email.Eq(email)).First()
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return invalidLogin(c, email)
