@@ -5,14 +5,22 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+
+	"github.com/adeynack/finances/app/appvalidator"
+	"gorm.io/gorm"
 )
 
 type User struct {
 	BaseModel
-	Email             string  `gorm:"not null;uniqueIndex" json:"email"`
-	DisplayName       string  `gorm:"not null" json:"display_name"`
-	EncryptedPassword string  `gorm:"not null" json:"-"`
+	Email             string  `gorm:"not null;uniqueIndex" json:"email" validate:"required,email"`
+	DisplayName       string  `gorm:"not null" json:"display_name" validate:"required"`
+	EncryptedPassword string  `gorm:"not null" json:"-" validate:"required"`
 	Books             []*Book `gorm:"foreignKey:owner_id" json:"books,omitempty"`
+}
+
+func (user *User) BeforeSave(tx *gorm.DB) error {
+	fmt.Println("User.BeforeSave")
+	return appvalidator.V.Struct(user)
 }
 
 func (user *User) SetPassword(password, secret string) error {

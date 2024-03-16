@@ -43,6 +43,11 @@ func Connect() (*gorm.DB, error) {
 		return nil, err
 	}
 
+	err = db.Callback().Create().Before("gorm:before_save").Register("validate", validateCallback)
+	if err != nil {
+		return nil, fmt.Errorf("error registering \"validate\" callback")
+	}
+
 	return db, nil
 }
 
