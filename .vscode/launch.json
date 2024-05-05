@@ -43,6 +43,17 @@
       }
     },
     {
+      "name": "Moneydance Import",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/import-from-moneydance",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "-auto-delete-book"
+      ]
+    },
+    {
       "name": "Debug file",
       "type": "go",
       "request": "launch",

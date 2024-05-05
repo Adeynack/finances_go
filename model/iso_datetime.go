@@ -28,3 +28,7 @@ func (dt *ISODateTime) UnmarshalText(text []byte) error {
 func (dt ISODateTime) MarshalText() (text []byte, err error) {
 	return []byte(dt.String()), nil
 }
+
+func Now() ISODateTime {
+	return ISODateTime(time.Now())
+}

@@ -3,6 +3,8 @@ package model
 import (
 	"fmt"
 	"reflect"
+
+	"gorm.io/gorm"
 )
 
 type ImportOrigin struct {
@@ -26,4 +28,25 @@ func (o *ImportOrigin) SetSubject(subject any) error {
 	o.SubjectType = subjectReflType.Name()
 
 	return nil
+}
+
+func CreateImportOrigin(db *gorm.DB, subject any, externalSystem string, externalID string) error {
+	model, id, err := ModelAndID(subject)
+	if err != nil {
+		return fmt.Errorf("error creating new ImportOrigin: %w", err)
+	}
+
+	origin := &ImportOrigin{
+		SubjectType:    model,
+		SubjectID:      id,
+		ExternalSystem: externalSystem,
+		ExternalID:     externalID,
+	}
+
+	err = db.Create(origin).Error
+	if err != nil {
+		return fmt.Errorf("error creating new ImportOrigin: %w", err)
+	}
+
+	return err
 }

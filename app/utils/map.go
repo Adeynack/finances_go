@@ -9,3 +9,11 @@ func MapGetValues[K comparable, V any](m map[K]V) []V {
 	}
 	return values
 }
+
+func MapGetOr[K comparable, V any](m map[K]V, key K, defaultValue V) V {
+	value, ok := m[key]
+	if ok {
+		return value
+	}
+	return defaultValue
+}

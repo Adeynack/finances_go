@@ -15,7 +15,6 @@ var V *AppValidator
 
 func init() {
 	V = &AppValidator{Validate: validator.New()}
-	V.RegisterAlias("currencyCode", "alpha,uppercase,len=3")
 }
 
 // Namespaced returns a map of namespaced FieldError if the provided err
