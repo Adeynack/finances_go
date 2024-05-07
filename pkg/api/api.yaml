@@ -1,0 +1,12 @@
+openapi: "3.1.0"
+info:
+  title: Finances API
+  version: "1.0"
+servers:
+  - url: https://api.server.test/v1
+paths:
+  /health:
+    get:
+      responses:
+        "200":
+          description: OK
