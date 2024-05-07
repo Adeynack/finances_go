@@ -10,5 +10,5 @@ var _ StrictServerInterface = (*Implementation)(nil)
 
 // (GET /health)
 func (s *Implementation) GetHealth(context.Context, GetHealthRequestObject) (GetHealthResponseObject, error) {
-	return GetHealth200Response{}, nil
+	return GetHealth200JSONResponse{Status: ServerHealthStatusHealthy}, nil
 }
