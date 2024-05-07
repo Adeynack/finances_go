@@ -12,5 +12,8 @@ __debug_bin*
 out
 node_modules
 
+# Environment
+.env
+
 # Auto-Generated Go Code
 *.gen.go

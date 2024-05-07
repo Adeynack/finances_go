@@ -1,2 +1,2 @@
-serve: sleep 2 && make build_for_debug_watch
-api: make generate_api_code_watch
+serve: sleep 2 && make run_watch
+oapi-gen: make generate_api_code_watch

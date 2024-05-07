@@ -1,60 +1,63 @@
 PORT ?= 40001
 
-.PHONY: ensure_tools
-ensure_tools:
-	which air || go install github.com/cosmtrek/air@latest
-	which staticcheck || go install honnef.co/go/tools/cmd/staticcheck@latest
+# Dev
+.PHONY: dev
+dev: tools
+	OVERMIND_SKIP_ENV=1 overmind start -f Procfile.dev -p $(PORT)
+
+.PHONY: tools
+tools:
+	@which -s air || go install github.com/cosmtrek/air@latest
+	@which -s staticcheck || go install honnef.co/go/tools/cmd/staticcheck@latest
+	@which -s golangci-lint || go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.56.2
+	@which -s godotenv || go install github.com/joho/godotenv/cmd/godotenv@latest
 
 # Start development server
+.PHONY: build_debug
+build_debug:
+	godotenv go build -gcflags=all="-N -l" -o out/serve ./cmd/serve/*.go
+
 .PHONY: run
-run: gen
-	go run cmd/serve/*.go
+run: build_debug
+	godotenv out/serve
 
-.PHONY: build_for_debug
-build_for_debug:
-	go build -gcflags=all="-N -l" -o out/serve ./cmd/serve/*.go
-
-.PHONY: build_for_debug_watch
-build_for_debug_watch:
+.PHONY: run_watch
+run_watch:
 # this watcher waits 1 second before building, to allow the generators to update Go files (eg: Templ, Gorm).
-	air -build.bin=out/serve -build.cmd="sleep 1 && make build_for_debug" -build.include_ext="go" -build.exclude_dir="node_modules,out,tmp"
+	godotenv air -c air_run_watch.toml
 
 # Build binaries
 
 .PHONY: build
 build: gen
-	go build -o bin/serve ./cmd/serve/*.go
+	godotenv go build -o bin/serve ./cmd/serve/*.go
 
 .PHONY: gen
 gen:
-	go generate ./...
+	godotenv go generate ./...
 
 .PHONY: generate_api_code_watch
 generate_api_code_watch:
-	air -build.bin=true -build.cmd="go generate pkg/api/package.go" -build.include_dir="pkg/api" -build.include_ext="yaml"
+	godotenv air -c air_opai.toml
 
 # Misc
 
 .PHONY: clean
 clean:
-	go clean -cache -testcache
+	godotenv go clean -cache -testcache
 
 .PHONY: test
 test:
-	go test ./...
+	godotenv go test ./...
 
 .PHONY: ct
 ct: clean test
 
 .PHONY: lint
-lint: ensure_tools build
+lint: tools build
 	go vet ./...
 	staticcheck ./...
+	golangci-lint run
 
 .PHONY: check
 check: clean build lint test
-
-# Dev
-.PHONY: dev
-dev:
-	OVERMIND_SKIP_ENV=1 overmind start -f Procfile.dev -p $(PORT)

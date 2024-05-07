@@ -1,0 +1,9 @@
+# Config file for [Air](https://github.com/cosmtrek/air) in TOML format
+
+[build]
+bin = "out/serve"
+cmd = "sleep 1 && make build_debug"
+send_interrupt = true
+kill_delay = 5000000
+include_ext = ["go"]
+exclude_dir = ["node_modules", "out", "tmp"]

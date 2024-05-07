@@ -1,19 +1,31 @@
 package main
 
 import (
+	"context"
 	"log"
-	"net/http"
+	"os"
+	"os/signal"
 
-	"github.com/adeynack/finances/pkg/api"
-	"github.com/go-chi/chi/v5"
+	"github.com/adeynack/finances/pkg/app"
 )
 
 func main() {
-	apiImpl := &api.Implementation{}
-	middlewares := []api.StrictMiddlewareFunc{}
-	router := chi.NewMux()
-	strictHandler := api.NewStrictHandler(apiImpl, middlewares)
-	handler := api.HandlerFromMux(strictHandler, router)
-	server := &http.Server{Handler: handler, Addr: "0.0.0.0:8080"}
-	log.Fatal(server.ListenAndServe())
+	// Bootstrap the server
+	shutdownServer, err := app.StartHttpServer()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// Listen for interrupt signal (eg: Ctrl-C) to gracefully shutdown the server
+	interruptCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	<-interruptCtx.Done()
+
+	log.Println("server shutting down")
+	if err := shutdownServer(); err != nil {
+		log.Fatal(err)
+	} else {
+		log.Println("server gracefully terminated")
+	}
 }

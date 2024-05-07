@@ -1,0 +1,7 @@
+# Config file for [Air](https://github.com/cosmtrek/air) in TOML format
+
+[build]
+bin = "/usr/bin/true"
+cmd = "go generate pkg/api/package.go"
+include_dir = ["pkg/api"]
+include_ext = ["yaml"]
