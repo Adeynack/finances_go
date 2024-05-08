@@ -11,6 +11,7 @@ tools:
 	@which -s staticcheck || go install honnef.co/go/tools/cmd/staticcheck@latest
 	@which -s golangci-lint || go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.56.2
 	@which -s godotenv || go install github.com/joho/godotenv/cmd/godotenv@latest
+	@which -s goose || go install -tags='no_clickhouse no_duckdb no_mssql no_mysql no_sqlite3 no_libsql no_vertica no_ydb' github.com/pressly/goose/v3/cmd/goose@latest
 
 # Start development server
 .PHONY: build_debug
@@ -61,3 +62,36 @@ lint: tools build
 
 .PHONY: check
 check: clean build lint test
+
+# Database
+
+.PHONY: db_create
+db_create:
+	godotenv make _db_create
+
+.PHONY: _db_create
+_db_create:
+	echo "SELECT 'CREATE DATABASE \"$(DATABASE_NAME)\"' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$(DATABASE_NAME)')\gexec" | psql --dbname=postgres
+
+.PHONY: db_migrate
+db_migrate: tools
+	godotenv goose up
+
+.PHONY: db_drop
+db_drop:
+	godotenv make _db_drop
+
+.PHONY: _db_drop
+_db_drop:
+	echo "drop database if exists \"$(DATABASE_NAME)\"" | psql --dbname=postgres
+
+.PHONY: db_seed
+db_seed:
+# 	godotenv go run cmd/dbseed/*.go
+
+.PHONY: psql
+psql:
+	godotenv psql
+
+.PHONY: db_full_reset
+db_full_reset: db_drop db_create db_migrate db_seed
