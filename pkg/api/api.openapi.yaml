@@ -8,6 +8,13 @@ servers:
 paths:
   /books:
     get:
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 200
       responses:
         "200":
           description: OK
@@ -69,11 +76,14 @@ components:
       required:
         - name
         - owner_id
+        - owner_display_name
         - default_currency_iso_code
       properties:
         name:
           type: string
         owner_id:
+          type: string
+        owner_display_name:
           type: string
         default_currency_iso_code:
           type: string

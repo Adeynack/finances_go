@@ -3,13 +3,12 @@ package service
 import (
 	"testing"
 
-	"github.com/adeynack/finances/pkg/model"
 	"github.com/stretchr/testify/require"
 )
 
 func TestUsersServicePasswordEncodingAndDecoding(t *testing.T) {
 	t.Parallel()
-	userService, err := model.NewUsersService()
+	userService, err := NewUsersService()
 	require.NoError(t, err)
 
 	t.Run("digest same value will result in different results", func(t *testing.T) {
