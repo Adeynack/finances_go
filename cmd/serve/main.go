@@ -11,10 +11,7 @@ import (
 
 func main() {
 	// Bootstrap the server
-	shutdownServer, err := app.StartHttpServer()
-	if err != nil {
-		log.Fatalln(err)
-	}
+	shutdownServer := app.MustStartHttpServer()
 
 	// Listen for interrupt signal (eg: Ctrl-C) to gracefully shutdown the server
 	interruptCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt)

@@ -17,3 +17,4 @@ node_modules
 
 # Auto-Generated Go Code
 *.gen.go
+pkg/repository/gen

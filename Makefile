@@ -12,6 +12,7 @@ tools:
 	@which -s golangci-lint || go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.56.2
 	@which -s godotenv || go install github.com/joho/godotenv/cmd/godotenv@latest
 	@which -s goose || go install -tags='no_clickhouse no_duckdb no_mssql no_mysql no_sqlite3 no_libsql no_vertica no_ydb' github.com/pressly/goose/v3/cmd/goose@latest
+	@which -s jet || go install github.com/go-jet/jet/v2/cmd/jet@latest
 
 # Start development server
 .PHONY: build_debug
@@ -76,6 +77,7 @@ _db_create:
 .PHONY: db_migrate
 db_migrate: tools
 	godotenv goose up
+	make db_generate
 
 .PHONY: db_drop
 db_drop:
@@ -94,4 +96,12 @@ psql:
 	godotenv psql
 
 .PHONY: db_full_reset
-db_full_reset: db_drop db_create db_migrate db_seed
+db_full_reset: db_drop db_create db_migrate db_seed db_generate
+
+.PHONY: db_generate
+db_generate:
+	godotenv make _db_generate
+
+.PHONY: _db_generate
+_db_generate:
+	jet -dsn="${DATABASE_URL}" -path=./pkg/repository/gen

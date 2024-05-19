@@ -11,16 +11,13 @@ import (
 
 	"github.com/adeynack/finances/pkg/api"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 type ServerShutdownFunc func() error
 
-func StartHttpServer() (ServerShutdownFunc, error) {
-	apiImpl := &api.Implementation{}
-	middlewares := []api.StrictMiddlewareFunc{}
-	router := chi.NewMux()
-	strictHandler := api.NewStrictHandler(apiImpl, middlewares)
-	handler := api.HandlerFromMux(strictHandler, router)
+func MustStartHttpServer() ServerShutdownFunc {
+	handler := mustCreateHandler()
 
 	address := fmt.Sprintf("localhost:%s", os.Getenv("PORT"))
 	server := &http.Server{Handler: handler, Addr: address}
@@ -40,5 +37,20 @@ func StartHttpServer() (ServerShutdownFunc, error) {
 
 		return server.Shutdown(ctx)
 	}
-	return shutdown, nil
+	return shutdown
+}
+
+func mustCreateHandler() http.Handler {
+	apiImpl := &api.Service{
+		DB: mustConnectDatabase(),
+	}
+	middlewares := []api.StrictMiddlewareFunc{}
+	router := chi.NewMux()
+	router.Use(
+		middleware.RequestID,
+		middleware.Logger,
+		middleware.Timeout(30*time.Second),
+	)
+	strictHandler := api.NewStrictHandler(apiImpl, middlewares)
+	return api.HandlerFromMux(strictHandler, router)
 }

@@ -6,6 +6,23 @@ info:
 servers:
   - url: https://api.server.test/v1
 paths:
+  /books:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            "application/json":
+              schema:
+                type: object
+                required:
+                  - books
+                properties:
+                  books:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Book"
+
   /health:
     get:
       responses:
@@ -25,6 +42,42 @@ paths:
 
 components:
   schemas:
+    ExistingResource:
+      type: object
+      required:
+        - id
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Book:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ExistingResource"
+        - $ref: "#/components/schemas/BookProperties"
+
+    BookProperties:
+      type: object
+      required:
+        - name
+        - owner_id
+        - default_currency_iso_code
+      properties:
+        name:
+          type: string
+        owner_id:
+          type: string
+        default_currency_iso_code:
+          type: string
+
     ServerHealthStatus:
       type: string
       enum:
