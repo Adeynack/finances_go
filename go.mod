@@ -3,10 +3,14 @@ module github.com/adeynack/finances
 go 1.24.4
 
 require (
-	github.com/a-h/templ v0.2.598
+	github.com/a-h/templ v0.3.906
+	github.com/go-chi/chi/v5 v5.2.2
+	github.com/go-playground/validator/v10 v10.19.0
 	github.com/gorilla/sessions v1.2.2
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.11.4
+	github.com/oapi-codegen/runtime v1.1.1
+	github.com/samber/lo v1.39.0
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/gen v0.3.25
 	gorm.io/gorm v1.25.7
@@ -15,17 +19,20 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.19.0 // indirect
+	github.com/google/uuid v1.5.0 // indirect
 	github.com/gorilla/context v1.1.2 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/samber/lo v1.39.0 // indirect
+	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
+	golang.org/x/telemetry v0.0.0-20240521205824-bda55230c457 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -42,18 +49,20 @@ require (
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
-	golang.org/x/crypto v0.21.0 // indirect
-	golang.org/x/mod v0.16.0 // indirect
-	golang.org/x/net v0.22.0 // indirect
-	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/sys v0.18.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/crypto v0.39.0 // indirect
+	golang.org/x/mod v0.25.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/sync v0.15.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.19.0 // indirect
-	gorm.io/datatypes v1.2.0 // indirect
+	golang.org/x/tools v0.34.0 // indirect
+	gorm.io/datatypes v1.2.0
 	gorm.io/driver/mysql v1.5.4 // indirect
 	gorm.io/hints v1.1.2 // indirect
 )
+
+tool golang.org/x/tools/cmd/deadcode
