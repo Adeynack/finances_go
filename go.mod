@@ -1,6 +1,6 @@
 module github.com/adeynack/finances
 
-go 1.22.0
+go 1.24.4
 
 require (
 	github.com/a-h/templ v0.2.598

@@ -1,6 +1,6 @@
 version: "3"
 
-name: finances
+name: finances_go
 
 services:
   devcontainer:

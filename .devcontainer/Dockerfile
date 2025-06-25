@@ -1,4 +1,4 @@
-FROM golang:1.22
+FROM golang:1.24.4-bookworm
 
 WORKDIR /workspaces/${LOCAL_WORKSPACE_FOLDER_BASENAME}
 
