@@ -1,22 +1,21 @@
 package model
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/adeynack/finances/app/appvalidator"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_Book_ValidateISOCurrency_LowerCase(t *testing.T) {
 	book := Book{DefaultCurrencyIsoCode: "EU"}
+
 	validations, err := appvalidator.V.Namespaced(appvalidator.V.Struct(book))
-	if !assert.NoError(t, err) {
-		return
-	}
-	validation, ok := validations["Book.DefaultCurrencyIsoCode"]
-	if !assert.Equal(t, true, ok) {
-		return
-	}
-	fmt.Println(validation)
+	require.NoError(t, err)
+
+	validationError, ok := validations["Book.DefaultCurrencyIsoCode"]
+	require.True(t, ok)
+	require.Equal(t, validationError.ActualTag(), "len")
+	require.Equal(t, validationError.Param(), "3")
+	require.Equal(t, validationError.Field(), "DefaultCurrencyIsoCode")
 }
