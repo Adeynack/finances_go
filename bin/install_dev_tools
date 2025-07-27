@@ -1,11 +1,6 @@
 #!/bin/bash
 # Install tools needed by the project's development operations
 
-if ! command -v air &> /dev/null
-then
-  go install -v github.com/cosmtrek/air@v1.50.0
-fi
-
 if ! command -v staticcheck &> /dev/null
 then
   go install -v honnef.co/go/tools/cmd/staticcheck@latest

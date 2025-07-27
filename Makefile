@@ -9,7 +9,7 @@ run:
 
 .PHONY: run_watch
 run_watch:
-	dotenv -c ${APP_ENV} -- air -build.bin="make run" -build.cmd="/bin/true" -build.include_ext="go,mod"
+	dotenv -c ${APP_ENV} -- go tool air -build.bin="make run" -build.cmd="/bin/true" -build.include_ext="go,mod"
 
 # Build binaries
 
@@ -24,7 +24,7 @@ build_for_debug:
 .PHONY: build_for_debug_watch
 build_for_debug_watch:
 # this watcher waits 1 second before building, to allow the generators to update Go files (eg: Templ, Gorm).
-	dotenv -c ${APP_ENV} -- air -build.bin=out/serve -build.cmd="sleep 1 && make build_for_debug"
+	dotenv -c ${APP_ENV} -- go tool air -build.bin=out/serve -build.cmd="sleep 1 && make build_for_debug"
 
 .PHONY: build_import_from_moneydance
 build_import_from_moneydance: gen
@@ -53,7 +53,7 @@ gen_gorm:
 
 .PHONY: gen_gorm_watch
 gen_gorm_watch:
-	dotenv -c ${APP_ENV} -- air -build.bin=/bin/true -build.cmd="make gen_gorm" -build.include_dir="model" -build.exclude_dir="model/query" -build.include_ext="go"
+	dotenv -c ${APP_ENV} -- go tool air -build.bin=/bin/true -build.cmd="make gen_gorm" -build.include_dir="model" -build.exclude_dir="model/query" -build.include_ext="go"
 
 # Generate Styles
 .PHONY: gen_css
