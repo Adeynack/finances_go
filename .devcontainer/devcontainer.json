@@ -46,7 +46,7 @@
         "bradlc.vscode-tailwindcss"
       ],
       "settings": {
-        "templ.executablePath": "${localWorkspaceFolderBasename}/bin/templ"
+        "templ.executablePath": "/workspaces/${localWorkspaceFolderBasename}/bin/templ"
       }
     }
   }
