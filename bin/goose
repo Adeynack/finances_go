@@ -1,2 +1,2 @@
 #!/bin/bash
-dotenv -c ${APP_ENV:-dev} goose $@
+dotenv -c ${APP_ENV:-dev} go tool goose -tags='no_clickhouse no_duckdb no_mssql no_mysql no_sqlite3 no_libsql no_vertica no_ydb' $@

@@ -1,14 +1,11 @@
 #!/bin/bash
 # Install tools needed by the project's development operations
 
+go mod download
+
 if ! command -v staticcheck &> /dev/null
 then
   go install -v honnef.co/go/tools/cmd/staticcheck@latest
-fi
-
-if ! command -v goose &> /dev/null
-then
-  go install -v -tags='no_clickhouse no_duckdb no_mssql no_mysql no_sqlite3 no_libsql no_vertica no_ydb' github.com/pressly/goose/v3/cmd/goose@latest
 fi
 
 if ! command -v dotenv &> /dev/null
