@@ -44,7 +44,10 @@
         "a-h.templ",
         "adpyke.vscode-sql-formatter",
         "bradlc.vscode-tailwindcss"
-      ]
+      ],
+      "settings": {
+        "templ.executablePath": "${localWorkspaceFolderBasename}/bin/templ"
+      }
     }
   }
 }

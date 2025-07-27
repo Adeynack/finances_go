@@ -39,11 +39,11 @@ gen: gen_templ gen_gorm
 
 .PHONY: gen_templ
 gen_templ:
-	dotenv -c ${APP_ENV} -- templ generate
+	dotenv -c ${APP_ENV} -- go tool templ generate
 
 .PHONY: gen_templ_watch
 gen_templ_watch:
-	dotenv -c ${APP_ENV} -- templ generate --watch
+	dotenv -c ${APP_ENV} -- go tool templ generate --watch
 
 # Generate Gorm Helpers
 

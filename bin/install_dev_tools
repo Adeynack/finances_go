@@ -1,10 +1,7 @@
 #!/bin/bash
 # Install tools needed by the project's development operations
 
-if ! command -v templ &> /dev/null
-then
-  go install -v github.com/a-h/templ/cmd/templ@latest
-fi
+go mod download
 
 if ! command -v overmind &> /dev/null
 then
