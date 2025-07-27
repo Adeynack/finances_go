@@ -19,6 +19,7 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
+	github.com/DarthSim/overmind v2.0.1+incompatible // indirect
 	github.com/a-h/parse v0.0.0-20250122154542-74294addb73e // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
@@ -35,11 +36,14 @@ require (
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/matoous/go-nanoid v1.5.1 // indirect
 	github.com/natefinch/atomic v1.0.1 // indirect
+	github.com/pkg/term v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/telemetry v0.0.0-20240521205824-bda55230c457 // indirect
+	gopkg.in/urfave/cli.v1 v1.20.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -73,6 +77,7 @@ require (
 )
 
 tool (
+	github.com/DarthSim/overmind
 	github.com/a-h/templ/cmd/templ
 	golang.org/x/tools/cmd/deadcode
 )

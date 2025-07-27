@@ -72,7 +72,7 @@ gen_css_prod:
 
 .PHONY: dev
 dev:
-	OVERMIND_SKIP_ENV=1 overmind start -f Procfile.dev -p $(PORT)
+	OVERMIND_SKIP_ENV=1 go tool overmind start -f Procfile.dev -p $(PORT)
 
 # Test / Lint / Clean
 

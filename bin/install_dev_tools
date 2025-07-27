@@ -1,13 +1,6 @@
 #!/bin/bash
 # Install tools needed by the project's development operations
 
-go mod download
-
-if ! command -v overmind &> /dev/null
-then
-  go install -v github.com/DarthSim/overmind@latest
-fi
-
 if ! command -v air &> /dev/null
 then
   go install -v github.com/cosmtrek/air@v1.50.0
