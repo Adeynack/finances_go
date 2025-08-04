@@ -1,65 +1,57 @@
 PORT ?= 40001
+DATABASE_NAME ?= finances
 
 # Dev
 .PHONY: dev
-dev: tools
-	OVERMIND_SKIP_ENV=1 overmind start -f Procfile.dev -p $(PORT)
-
-.PHONY: tools
-tools:
-	@which -s air || go install github.com/cosmtrek/air@latest
-	@which -s staticcheck || go install honnef.co/go/tools/cmd/staticcheck@latest
-	@which -s golangci-lint || go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.56.2
-	@which -s godotenv || go install github.com/joho/godotenv/cmd/godotenv@latest
-	@which -s goose || go install -tags='no_clickhouse no_duckdb no_mssql no_mysql no_sqlite3 no_libsql no_vertica no_ydb' github.com/pressly/goose/v3/cmd/goose@latest
-	@which -s jet || go install github.com/go-jet/jet/v2/cmd/jet@latest
+dev:
+	OVERMIND_SKIP_ENV=1 go tool overmind start -f Procfile.dev -p $(PORT)
 
 # Start development server
 .PHONY: build_debug
 build_debug:
-	godotenv go build -gcflags=all="-N -l" -o out/serve ./cmd/serve/*.go
+	go tool godotenv go build -gcflags=all="-N -l" -o out/serve ./cmd/serve/*.go
 
 .PHONY: run
 run: build_debug
-	godotenv out/serve
+	go tool godotenv out/serve
 
 .PHONY: run_watch
 run_watch:
 # this watcher waits 1 second before building, to allow the generators to update Go files (eg: Templ, Gorm).
-	godotenv air -c air_run_watch.toml
+	go tool godotenv go tool air -c air_run_watch.toml
 
 # Build binaries
 
 .PHONY: build
 build: gen
-	godotenv go build -o bin/serve ./cmd/serve/*.go
+	go tool godotenv go build -o bin/serve ./cmd/serve/*.go
 
 .PHONY: gen
 gen:
-	godotenv go generate ./...
+	go tool godotenv go generate ./...
 
 .PHONY: generate_api_code_watch
 generate_api_code_watch:
-	godotenv air -c air_opai.toml
+	go tool godotenv go tool air -c air_opai.toml
 
 # Misc
 
 .PHONY: clean
 clean:
-	godotenv go clean -cache -testcache
+	go tool godotenv go clean -cache -testcache
 
 .PHONY: test
 test:
-	godotenv go test ./...
+	go tool godotenv go test ./...
 
 .PHONY: ct
 ct: clean test
 
 .PHONY: lint
-lint: tools build
+lint: build
 	go vet ./...
 	staticcheck ./...
-	golangci-lint run
+	go tool golangci-lint run
 
 .PHONY: check
 check: clean build lint test
@@ -68,20 +60,20 @@ check: clean build lint test
 
 .PHONY: db_create
 db_create:
-	godotenv make _db_create
+	go tool godotenv make _db_create
 
 .PHONY: _db_create
 _db_create:
 	echo "SELECT 'CREATE DATABASE \"$(DATABASE_NAME)\"' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$(DATABASE_NAME)')\gexec" | psql --dbname=postgres
 
 .PHONY: db_migrate
-db_migrate: tools
-	godotenv goose up
+db_migrate:
+	go tool godotenv go tool goose up
 	make db_generate
 
 .PHONY: db_drop
 db_drop:
-	godotenv make _db_drop
+	go tool godotenv make _db_drop
 
 .PHONY: _db_drop
 _db_drop:
@@ -93,15 +85,15 @@ db_seed:
 
 .PHONY: psql
 psql:
-	godotenv psql
+	go tool godotenv psql
 
 .PHONY: db_full_reset
 db_full_reset: db_drop db_create db_migrate db_seed db_generate
 
 .PHONY: db_generate
 db_generate:
-	godotenv make _db_generate
+	go tool godotenv make _db_generate
 
 .PHONY: _db_generate
 _db_generate:
-	jet -dsn="${DATABASE_URL}" -path=./pkg/repository/gen
+	go tool jet -dsn="${DATABASE_URL}" -path=./pkg/repository/gen

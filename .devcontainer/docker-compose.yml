@@ -1,6 +1,6 @@
 version: "3"
 
-name: finances
+name: finances_go
 
 services:
   devcontainer:
@@ -15,7 +15,7 @@ services:
     network_mode: host
 
   postgres:
-    image: postgres:15.1
+    image: postgres:17.5
     restart: unless-stopped
     ports:
       - 40002:5432

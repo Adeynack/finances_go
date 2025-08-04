@@ -40,7 +40,8 @@
         "ms-azuretools.vscode-docker",
         "golang.go",
         "ms-vscode.makefile-tools",
-        "neonxp.gotools"
+        "neonxp.gotools",
+        "tamasfe.even-better-toml"
       ]
     }
   }
