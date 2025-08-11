@@ -81,11 +81,15 @@ _db_drop:
 
 .PHONY: db_seed
 db_seed:
-# 	godotenv go run cmd/dbseed/*.go
+# 	go tool godotenv go run cmd/dbseed/*.go
 
 .PHONY: psql
 psql:
-	go tool godotenv psql
+	go tool godotenv make _psql
+
+.PHONY: _psql
+_psql:
+	psql ${DATABASE_URL}
 
 .PHONY: db_full_reset
 db_full_reset: db_drop db_create db_migrate db_seed db_generate
