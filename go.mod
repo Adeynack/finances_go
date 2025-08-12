@@ -10,6 +10,7 @@ require (
 	github.com/go-jet/jet/v2 v2.13.0
 	github.com/google/uuid v1.6.0
 	github.com/oapi-codegen/runtime v1.1.2
+	github.com/veqryn/slog-context v0.8.0
 )
 
 require (
@@ -76,6 +77,7 @@ require (
 	github.com/go-critic/go-critic v0.12.0 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
+	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
 	github.com/go-toolsmith/astcopy v1.1.0 // indirect
 	github.com/go-toolsmith/astequal v1.2.0 // indirect

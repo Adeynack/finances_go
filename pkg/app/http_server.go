@@ -12,6 +12,7 @@ import (
 	"github.com/adeynack/finances/pkg/api"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	slogctx "github.com/veqryn/slog-context"
 )
 
 type ServerShutdownFunc func() error
@@ -48,9 +49,22 @@ func mustCreateHandler() http.Handler {
 	router := chi.NewMux()
 	router.Use(
 		middleware.RequestID,
+		RequestIDStructuredLog,
 		middleware.Logger,
 		middleware.Timeout(30*time.Second),
 	)
 	strictHandler := api.NewStrictHandler(apiImpl, middlewares)
 	return api.HandlerFromMux(strictHandler, router)
+}
+
+func RequestIDStructuredLog(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r = r.WithContext(
+			slogctx.With(
+				r.Context(),
+				"request_id",
+				r.Context().Value(middleware.RequestIDKey),
+			))
+		next.ServeHTTP(w, r)
+	})
 }
