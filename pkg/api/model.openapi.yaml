@@ -1,0 +1,47 @@
+openapi: "3.0.4"
+components:
+  schemas:
+    ExistingResource:
+      type: object
+      required:
+        - id
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Book:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ExistingResource"
+        - $ref: "#/components/schemas/BookProperties"
+
+    BookProperties:
+      type: object
+      required:
+        - name
+        - owner_id
+        - owner_display_name
+        - default_currency_iso_code
+      properties:
+        name:
+          type: string
+        owner_id:
+          type: string
+        owner_display_name:
+          type: string
+        default_currency_iso_code:
+          type: string
+
+    ServerHealthStatus:
+      type: string
+      enum:
+        - healthy
+        - unhealthy

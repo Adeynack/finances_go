@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/adeynack/finances/pkg/api"
+	"github.com/adeynack/finances/pkg/api/apiserver"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	slogctx "github.com/veqryn/slog-context"
@@ -42,10 +42,10 @@ func MustStartHttpServer() ServerShutdownFunc {
 }
 
 func mustCreateHandler() http.Handler {
-	apiImpl := &api.Service{
+	apiImpl := &apiserver.Service{
 		DB: mustConnectDatabase(),
 	}
-	middlewares := []api.StrictMiddlewareFunc{}
+	middlewares := []apiserver.StrictMiddlewareFunc{}
 	router := chi.NewMux()
 	router.Use(
 		middleware.RequestID,
@@ -53,8 +53,8 @@ func mustCreateHandler() http.Handler {
 		middleware.Logger,
 		middleware.Timeout(30*time.Second),
 	)
-	strictHandler := api.NewStrictHandler(apiImpl, middlewares)
-	return api.HandlerFromMux(strictHandler, router)
+	strictHandler := apiserver.NewStrictHandler(apiImpl, middlewares)
+	return apiserver.HandlerFromMux(strictHandler, router)
 }
 
 func RequestIDStructuredLog(next http.Handler) http.Handler {

@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/oapi-codegen/oapi-codegen/HEAD/configuration-schema.json
+package: apiserver
+output: apiserver/api.gen.go
+generate:
+  models: true
+  chi-server: true
+  strict-server: true
+compatibility:
+  always-prefix-enum-values: true
+import-mapping:
+  model.openapi.yaml: github.com/adeynack/finances/pkg/api/apimodel

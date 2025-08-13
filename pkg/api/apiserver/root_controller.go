@@ -1,8 +1,10 @@
-package api
+package apiserver
 
 import (
 	"context"
 	"database/sql"
+
+	"github.com/adeynack/finances/pkg/api/apimodel"
 )
 
 type Service struct {
@@ -13,5 +15,5 @@ var _ StrictServerInterface = (*Service)(nil)
 
 // (GET /health)
 func (s *Service) GetHealth(context.Context, GetHealthRequestObject) (GetHealthResponseObject, error) {
-	return GetHealth200JSONResponse{Status: ServerHealthStatusHealthy}, nil
+	return GetHealth200JSONResponse{Status: apimodel.ServerHealthStatusHealthy}, nil
 }
