@@ -1,5 +1,4 @@
 PORT ?= 40001
-DATABASE_NAME ?= finances
 
 # Dev
 .PHONY: dev
@@ -42,7 +41,7 @@ clean:
 
 .PHONY: test
 test:
-	go tool godotenv go test ./...
+	go tool godotenv -f .env.test go test ./... -v -count=1 -json | go tool gotestfmt
 
 .PHONY: ct
 ct: clean test
@@ -64,7 +63,7 @@ db_create:
 
 .PHONY: _db_create
 _db_create:
-	echo "SELECT 'CREATE DATABASE \"$(DATABASE_NAME)\"' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$(DATABASE_NAME)')\gexec" | psql --dbname=postgres
+	echo "SELECT 'CREATE DATABASE \"$(PGDATABASE)\"' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$(PGDATABASE)')\gexec" | psql --dbname=postgres
 
 .PHONY: db_migrate
 db_migrate:
@@ -77,11 +76,15 @@ db_drop:
 
 .PHONY: _db_drop
 _db_drop:
-	echo "drop database if exists \"$(DATABASE_NAME)\"" | psql --dbname=postgres
+	echo "drop database if exists \"$(PGDATABASE)\"" | psql --dbname=postgres
 
 .PHONY: db_seed
 db_seed:
-# 	go tool godotenv go run cmd/dbseed/*.go
+	go tool godotenv make _db_seed
+
+.PHONY: _db_seed
+_db_seed:
+	cat db/seeds/test.sql | psql
 
 .PHONY: psql
 psql:
@@ -89,10 +92,10 @@ psql:
 
 .PHONY: _psql
 _psql:
-	psql ${DATABASE_URL}
+	psql
 
 .PHONY: db_full_reset
-db_full_reset: db_drop db_create db_migrate db_seed db_generate
+db_full_reset: db_drop db_create db_migrate db_seed db_seed
 
 .PHONY: db_generate
 db_generate:
@@ -100,4 +103,8 @@ db_generate:
 
 .PHONY: _db_generate
 _db_generate:
-	go tool jet -dsn="${DATABASE_URL}" -path=./pkg/repository/gen
+	@if [ "$(PGDATABASE)" != "finances" ]; then \
+		echo "Error: PGDATABASE must be 'finances' to run db_generate"; \
+	else \
+		go tool jet -dsn="${DATABASE_URL}" -path=./pkg/repository/gen; \
+	fi

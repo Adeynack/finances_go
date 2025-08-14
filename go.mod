@@ -106,6 +106,7 @@ require (
 	github.com/gostaticanalysis/comment v1.5.0 // indirect
 	github.com/gostaticanalysis/forcetypeassert v0.2.0 // indirect
 	github.com/gostaticanalysis/nilerr v0.1.1 // indirect
+	github.com/gotesttools/gotestfmt/v2 v2.5.0 // indirect
 	github.com/hashicorp/go-immutable-radix/v2 v2.1.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
@@ -294,6 +295,7 @@ tool (
 	github.com/air-verse/air
 	github.com/go-jet/jet/v2/cmd/jet
 	github.com/golangci/golangci-lint/cmd/golangci-lint
+	github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt
 	github.com/joho/godotenv/cmd/godotenv
 	github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
 	github.com/pressly/goose/v3/cmd/goose

@@ -14,6 +14,7 @@ func mustConnectDatabase() *sql.DB {
 	if !dsnPresent {
 		panic(errors.New("environment DATABASE_URL must be set"))
 	}
+
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		panic(fmt.Errorf("opening connection to database: %w", err))
