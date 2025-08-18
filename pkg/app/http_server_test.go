@@ -10,8 +10,6 @@ import (
 
 func TestHttpServer(t *testing.T) {
 	handler := mustCreateHandler()
-	// server := httptest.NewServer(handler)
-	// t.Cleanup(server.Close)
 
 	t.Run("GET /health", func(t *testing.T) {
 		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/health", nil)
