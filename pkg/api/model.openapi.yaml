@@ -45,3 +45,73 @@ components:
       enum:
         - healthy
         - unhealthy
+
+    ExchangeStatus:
+      type: string
+      enum:
+        - uncleared
+        - reconciling
+        - cleared
+
+    ExchangeWithSplits:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ExistingResource"
+        - $ref: "#/components/schemas/ExchangeProperties"
+        - type: object
+          required:
+            - splits
+          properties:
+            splits:
+              type: array
+              items:
+                $ref: "#/components/schemas/Split"
+
+    ExchangeProperties:
+      type: object
+      required:
+        - date
+        - register_id
+        - description
+        - status
+      properties:
+        date:
+          type: string
+          format: date
+        register_id:
+          type: string
+        cheque:
+          type: string
+        description:
+          type: string
+        memo:
+          type: string
+        status:
+          $ref: "#/components/schemas/ExchangeStatus"
+
+    Split:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ExistingResource"
+        - $ref: "#/components/schemas/SplitProperties"
+
+    SplitProperties:
+      type: object
+      required:
+        - exchange_id
+        - destination_register_id
+        - amount
+        - status
+      properties:
+        exchange_id:
+          type: string
+        destination_register_id:
+          type: string
+        amount:
+          type: integer
+        counterpart_amount:
+          type: integer
+        memo:
+          type: string
+        status:
+          $ref: "#/components/schemas/ExchangeStatus"

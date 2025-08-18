@@ -26,6 +26,9 @@ type ServerInterface interface {
 	// (GET /books)
 	GetBooks(w http.ResponseWriter, r *http.Request, params GetBooksParams)
 
+	// (GET /exchanges)
+	GetExchanges(w http.ResponseWriter, r *http.Request)
+
 	// (GET /health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
 }
@@ -36,6 +39,11 @@ type Unimplemented struct{}
 
 // (GET /books)
 func (_ Unimplemented) GetBooks(w http.ResponseWriter, r *http.Request, params GetBooksParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /exchanges)
+func (_ Unimplemented) GetExchanges(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -71,6 +79,20 @@ func (siw *ServerInterfaceWrapper) GetBooks(w http.ResponseWriter, r *http.Reque
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetBooks(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetExchanges operation middleware
+func (siw *ServerInterfaceWrapper) GetExchanges(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetExchanges(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -211,6 +233,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/books", wrapper.GetBooks)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/exchanges", wrapper.GetExchanges)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health", wrapper.GetHealth)
 	})
 
@@ -230,6 +255,24 @@ type GetBooks200JSONResponse struct {
 }
 
 func (response GetBooks200JSONResponse) VisitGetBooksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetExchangesRequestObject struct {
+}
+
+type GetExchangesResponseObject interface {
+	VisitGetExchangesResponse(w http.ResponseWriter) error
+}
+
+type GetExchanges200JSONResponse struct {
+	Exchanges []externalRef0.ExchangeWithSplits `json:"exchanges"`
+}
+
+func (response GetExchanges200JSONResponse) VisitGetExchangesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
@@ -260,6 +303,9 @@ type StrictServerInterface interface {
 
 	// (GET /books)
 	GetBooks(ctx context.Context, request GetBooksRequestObject) (GetBooksResponseObject, error)
+
+	// (GET /exchanges)
+	GetExchanges(ctx context.Context, request GetExchangesRequestObject) (GetExchangesResponseObject, error)
 
 	// (GET /health)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
@@ -313,6 +359,30 @@ func (sh *strictHandler) GetBooks(w http.ResponseWriter, r *http.Request, params
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetBooksResponseObject); ok {
 		if err := validResponse.VisitGetBooksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetExchanges operation middleware
+func (sh *strictHandler) GetExchanges(w http.ResponseWriter, r *http.Request) {
+	var request GetExchangesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetExchanges(ctx, request.(GetExchangesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetExchanges")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetExchangesResponseObject); ok {
+		if err := validResponse.VisitGetExchangesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

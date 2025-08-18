@@ -28,6 +28,22 @@ paths:
                     type: array
                     items:
                       $ref: "model.openapi.yaml#/components/schemas/Book"
+  /exchanges:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            "application/json":
+              schema:
+                type: object
+                required:
+                  - exchanges
+                properties:
+                  exchanges:
+                    type: array
+                    items:
+                      $ref: "model.openapi.yaml#/components/schemas/ExchangeWithSplits"
 
   /health:
     get:

@@ -14,10 +14,6 @@ import (
 )
 
 func (s *Service) GetBooks(ctx context.Context, request GetBooksRequestObject) (GetBooksResponseObject, error) {
-	// `GetBooksRequestObject` is generated, and its content is already filled by
-	// the generated code with this request's values.
-
-	// Query (through a repo) the database
 	booksFromDB, err := getBooksFromRepo(ctx, s.DB)
 	if err != nil {
 		return nil, fmt.Errorf("fetching books from database: %w", err)

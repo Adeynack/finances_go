@@ -5,6 +5,15 @@ package apimodel
 
 import (
 	"time"
+
+	openapi_types "github.com/oapi-codegen/runtime/types"
+)
+
+// Defines values for ExchangeStatus.
+const (
+	ExchangeStatusCleared     ExchangeStatus = "cleared"
+	ExchangeStatusReconciling ExchangeStatus = "reconciling"
+	ExchangeStatusUncleared   ExchangeStatus = "uncleared"
 )
 
 // Defines values for ServerHealthStatus.
@@ -32,6 +41,33 @@ type BookProperties struct {
 	OwnerId                string `json:"owner_id"`
 }
 
+// ExchangeProperties defines model for ExchangeProperties.
+type ExchangeProperties struct {
+	Cheque      *string            `json:"cheque,omitempty"`
+	Date        openapi_types.Date `json:"date"`
+	Description string             `json:"description"`
+	Memo        *string            `json:"memo,omitempty"`
+	RegisterId  string             `json:"register_id"`
+	Status      ExchangeStatus     `json:"status"`
+}
+
+// ExchangeStatus defines model for ExchangeStatus.
+type ExchangeStatus string
+
+// ExchangeWithSplits defines model for ExchangeWithSplits.
+type ExchangeWithSplits struct {
+	Cheque      *string            `json:"cheque,omitempty"`
+	CreatedAt   time.Time          `json:"created_at"`
+	Date        openapi_types.Date `json:"date"`
+	Description string             `json:"description"`
+	Id          string             `json:"id"`
+	Memo        *string            `json:"memo,omitempty"`
+	RegisterId  string             `json:"register_id"`
+	Splits      []Split            `json:"splits"`
+	Status      ExchangeStatus     `json:"status"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+}
+
 // ExistingResource defines model for ExistingResource.
 type ExistingResource struct {
 	CreatedAt time.Time `json:"created_at"`
@@ -41,3 +77,26 @@ type ExistingResource struct {
 
 // ServerHealthStatus defines model for ServerHealthStatus.
 type ServerHealthStatus string
+
+// Split defines model for Split.
+type Split struct {
+	Amount                int            `json:"amount"`
+	CounterpartAmount     *int           `json:"counterpart_amount,omitempty"`
+	CreatedAt             time.Time      `json:"created_at"`
+	DestinationRegisterId string         `json:"destination_register_id"`
+	ExchangeId            string         `json:"exchange_id"`
+	Id                    string         `json:"id"`
+	Memo                  *string        `json:"memo,omitempty"`
+	Status                ExchangeStatus `json:"status"`
+	UpdatedAt             time.Time      `json:"updated_at"`
+}
+
+// SplitProperties defines model for SplitProperties.
+type SplitProperties struct {
+	Amount                int            `json:"amount"`
+	CounterpartAmount     *int           `json:"counterpart_amount,omitempty"`
+	DestinationRegisterId string         `json:"destination_register_id"`
+	ExchangeId            string         `json:"exchange_id"`
+	Memo                  *string        `json:"memo,omitempty"`
+	Status                ExchangeStatus `json:"status"`
+}
