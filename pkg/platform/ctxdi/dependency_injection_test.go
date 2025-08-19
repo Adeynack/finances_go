@@ -45,9 +45,9 @@ func TestCtxDi(t *testing.T) {
 		})
 	})
 
-	t.Run("when an unnamed Foo is registered", func(t *testing.T) {
+	t.Run("when an unnamed Foo value is registered", func(t *testing.T) {
 		registeredFoo := Foo{Bar: "5160b303-f563-44c3-ac93-baebea18cbe7"}
-		ctx := Register(t.Context(), registeredFoo)
+		ctx := RegisterValue(t.Context(), registeredFoo)
 
 		t.Run("Resolve succeeds for unnamed Foo", func(t *testing.T) {
 			result, err := Resolve[Foo](ctx)
@@ -68,9 +68,9 @@ func TestCtxDi(t *testing.T) {
 		})
 	})
 
-	t.Run("when a named Foo is registered", func(t *testing.T) {
+	t.Run("when a named Foo value is registered", func(t *testing.T) {
 		registeredFoo := Foo{Bar: "e1950227-441b-4238-804f-908110c0592a"}
-		ctx := RegisterNamed(t.Context(), "TheFuu", registeredFoo)
+		ctx := RegisterNamedValue(t.Context(), "TheFuu", registeredFoo)
 
 		t.Run("Resolve fails for unnamed Foo", func(t *testing.T) {
 			_, err := Resolve[Foo](ctx)

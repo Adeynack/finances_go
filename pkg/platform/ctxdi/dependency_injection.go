@@ -73,11 +73,11 @@ func MustResolveNamed[T any](ctx context.Context, name string) T {
 	return result
 }
 
-func Register[T any](ctx context.Context, value T) context.Context {
-	return RegisterNamed(ctx, "", value)
+func RegisterValue[T any](ctx context.Context, value T) context.Context {
+	return RegisterNamedValue(ctx, "", value)
 }
 
-func RegisterNamed[T any](ctx context.Context, name string, value T) context.Context {
+func RegisterNamedValue[T any](ctx context.Context, name string, value T) context.Context {
 	key := keyFor[T](name)
 	return context.WithValue(ctx, key, value)
 }
