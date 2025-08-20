@@ -1,11 +1,10 @@
-package ctxdi
+package ctxval
 
 import (
 	"errors"
 	"fmt"
 )
 
-// Errors
 var (
 	ErrCannotResolve          = errors.New("unable to resolve dependency")
 	ErrUnregisteredDependency = fmt.Errorf("%w: unregistered dependency", ErrCannotResolve)

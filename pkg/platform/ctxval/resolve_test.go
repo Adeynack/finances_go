@@ -1,4 +1,4 @@
-package ctxdi
+package ctxval
 
 import (
 	"testing"
@@ -14,24 +14,24 @@ type Bar struct {
 	Foo string
 }
 
-func TestCtxDi(t *testing.T) {
+func TestResolve(t *testing.T) {
 	t.Run("when nothing is registered", func(t *testing.T) {
 		t.Run("Resolve fails", func(t *testing.T) {
 			_, err := Resolve[Foo](t.Context())
 			require.ErrorIs(t, err, ErrUnregisteredDependency)
-			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxdi.Foo"`, err.Error())
+			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxval.Foo"`, err.Error())
 		})
 
 		t.Run("ResolveNamed fails", func(t *testing.T) {
 			_, err := ResolveNamed[Foo](t.Context(), "asdf")
 			require.ErrorIs(t, err, ErrUnregisteredDependency)
-			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxdi.Foo(asdf)"`, err.Error())
+			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxval.Foo(asdf)"`, err.Error())
 		})
 
 		t.Run("MustResolve panics", func(t *testing.T) {
 			require.PanicsWithError(
 				t,
-				`unable to resolve dependency: unregistered dependency "ctxdi.Foo"`,
+				`unable to resolve dependency: unregistered dependency "ctxval.Foo"`,
 				func() { MustResolve[Foo](t.Context()) },
 			)
 		})
@@ -39,7 +39,7 @@ func TestCtxDi(t *testing.T) {
 		t.Run("MustResolveNamed panics", func(t *testing.T) {
 			require.PanicsWithError(
 				t,
-				`unable to resolve dependency: unregistered dependency "ctxdi.Foo(asdf)"`,
+				`unable to resolve dependency: unregistered dependency "ctxval.Foo(asdf)"`,
 				func() { MustResolveNamed[Foo](t.Context(), "asdf") },
 			)
 		})
@@ -58,13 +58,13 @@ func TestCtxDi(t *testing.T) {
 		t.Run("Resolve fails for unnamed Bar", func(t *testing.T) {
 			_, err := Resolve[Bar](ctx)
 			require.ErrorIs(t, err, ErrUnregisteredDependency)
-			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxdi.Bar"`, err.Error())
+			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxval.Bar"`, err.Error())
 		})
 
 		t.Run("ResolveNamed fails for named Foo", func(t *testing.T) {
 			_, err := ResolveNamed[Foo](ctx, "asdf")
 			require.ErrorIs(t, err, ErrUnregisteredDependency)
-			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxdi.Foo(asdf)"`, err.Error())
+			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxval.Foo(asdf)"`, err.Error())
 		})
 	})
 
@@ -75,13 +75,13 @@ func TestCtxDi(t *testing.T) {
 		t.Run("Resolve fails for unnamed Foo", func(t *testing.T) {
 			_, err := Resolve[Foo](ctx)
 			require.ErrorIs(t, err, ErrUnregisteredDependency)
-			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxdi.Foo"`, err.Error())
+			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxval.Foo"`, err.Error())
 		})
 
 		t.Run("Resolve fails for unnamed Bar", func(t *testing.T) {
 			_, err := Resolve[Bar](ctx)
 			require.ErrorIs(t, err, ErrUnregisteredDependency)
-			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxdi.Bar"`, err.Error())
+			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxval.Bar"`, err.Error())
 		})
 
 		t.Run("Resolve succeeds for Foo named 'TheFuu'", func(t *testing.T) {
@@ -93,7 +93,7 @@ func TestCtxDi(t *testing.T) {
 		t.Run("Resolve fails for Foo named 'SomethingElse'", func(t *testing.T) {
 			_, err := ResolveNamed[Foo](ctx, "SomethingElse")
 			require.ErrorIs(t, err, ErrUnregisteredDependency)
-			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxdi.Foo(SomethingElse)"`, err.Error())
+			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxval.Foo(SomethingElse)"`, err.Error())
 		})
 	})
 }
