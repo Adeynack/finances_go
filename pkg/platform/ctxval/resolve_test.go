@@ -47,7 +47,7 @@ func TestResolve(t *testing.T) {
 
 	t.Run("when an unnamed Foo value is registered", func(t *testing.T) {
 		registeredFoo := Foo{Bar: "5160b303-f563-44c3-ac93-baebea18cbe7"}
-		ctx := RegisterValue(t.Context(), registeredFoo)
+		ctx := Register(t.Context(), registeredFoo)
 
 		t.Run("Resolve succeeds for unnamed Foo", func(t *testing.T) {
 			result, err := Resolve[Foo](ctx)
@@ -70,7 +70,7 @@ func TestResolve(t *testing.T) {
 
 	t.Run("when a named Foo value is registered", func(t *testing.T) {
 		registeredFoo := Foo{Bar: "e1950227-441b-4238-804f-908110c0592a"}
-		ctx := RegisterNamedValue(t.Context(), "TheFuu", registeredFoo)
+		ctx := RegisterNamed(t.Context(), "TheFuu", registeredFoo)
 
 		t.Run("Resolve fails for unnamed Foo", func(t *testing.T) {
 			_, err := Resolve[Foo](ctx)
@@ -110,7 +110,7 @@ func TestResolve2(t *testing.T) {
 	t.Run("when the 1st type is registered", func(t *testing.T) {
 		ctx := t.Context()
 		registeredFoo := Foo{Bar: "f2074b00-8679-4a33-951b-167934dd707b"}
-		ctx = RegisterValue(ctx, registeredFoo)
+		ctx = Register(ctx, registeredFoo)
 
 		t.Run("Resolve2 fails with the 2nd type's error", func(t *testing.T) {
 			_, _, err := Resolve2[Foo, Bar](ctx)
@@ -122,7 +122,7 @@ func TestResolve2(t *testing.T) {
 	t.Run("when the 2nd type is registered", func(t *testing.T) {
 		ctx := t.Context()
 		registeredFoo := Bar{Foo: "3288d2ac-077f-45e8-8981-674ee1853645"}
-		ctx = RegisterValue(ctx, registeredFoo)
+		ctx = Register(ctx, registeredFoo)
 
 		t.Run("Resolve2 fails with the 1st type's error", func(t *testing.T) {
 			_, _, err := Resolve2[Foo, Bar](ctx)
@@ -135,8 +135,8 @@ func TestResolve2(t *testing.T) {
 		ctx := t.Context()
 		registeredFoo := Foo{Bar: "50dcc406-6932-427e-af98-82bfc011dd9e"}
 		registeredBar := Bar{Foo: "e8f22c3e-37a5-4ad2-8747-f5c7b4b288f7"}
-		ctx = RegisterValue(ctx, registeredFoo)
-		ctx = RegisterValue(ctx, registeredBar)
+		ctx = Register(ctx, registeredFoo)
+		ctx = Register(ctx, registeredBar)
 
 		t.Run("Resolve2 fails with the 1st type's error", func(t *testing.T) {
 			foo, bar, err := Resolve2[Foo, Bar](ctx)
@@ -151,11 +151,11 @@ func TestResolve3(t *testing.T) {
 	t.Run("when all types are registered (smoke test)", func(t *testing.T) {
 		ctx := t.Context()
 		registeredString := "f3062b0d-97df-4436-a579-158f3175d62d"
-		ctx = RegisterValue(ctx, registeredString)
+		ctx = Register(ctx, registeredString)
 		registeredFoo := Foo{Bar: "3e083275-7815-4b4c-bad7-ef59b578513a"}
-		ctx = RegisterValue(ctx, registeredFoo)
+		ctx = Register(ctx, registeredFoo)
 		registeredBar := Bar{Foo: "80d9bcf2-746e-4026-aec5-f734f22fbe00"}
-		ctx = RegisterValue(ctx, registeredBar)
+		ctx = Register(ctx, registeredBar)
 
 		t.Run("Register3 succeeds with all types", func(t *testing.T) {
 			s, foo, bar, err := Resolve3[string, Foo, Bar](ctx)
@@ -171,13 +171,13 @@ func TestResolve4(t *testing.T) {
 	t.Run("when all types are registered (smoke test)", func(t *testing.T) {
 		ctx := t.Context()
 		registeredString := "f3062b0d-97df-4436-a579-158f3175d62d"
-		ctx = RegisterValue(ctx, registeredString)
+		ctx = Register(ctx, registeredString)
 		registeredByte := byte(192)
-		ctx = RegisterValue(ctx, registeredByte)
+		ctx = Register(ctx, registeredByte)
 		registeredFoo := Foo{Bar: "3e083275-7815-4b4c-bad7-ef59b578513a"}
-		ctx = RegisterValue(ctx, registeredFoo)
+		ctx = Register(ctx, registeredFoo)
 		registeredBar := Bar{Foo: "80d9bcf2-746e-4026-aec5-f734f22fbe00"}
-		ctx = RegisterValue(ctx, registeredBar)
+		ctx = Register(ctx, registeredBar)
 
 		t.Run("Register4 succeeds with all types", func(t *testing.T) {
 			s, b, foo, bar, err := Resolve4[string, byte, Foo, Bar](ctx)
