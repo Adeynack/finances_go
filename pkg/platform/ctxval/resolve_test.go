@@ -97,3 +97,95 @@ func TestResolve(t *testing.T) {
 		})
 	})
 }
+
+func TestResolve2(t *testing.T) {
+	t.Run("when nothing is registered", func(t *testing.T) {
+		t.Run("Resolve2 fails with the 1st type's error", func(t *testing.T) {
+			_, _, err := Resolve2[Foo, Bar](t.Context())
+			require.ErrorIs(t, err, ErrUnregisteredDependency)
+			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxval.Foo"`, err.Error())
+		})
+	})
+
+	t.Run("when the 1st type is registered", func(t *testing.T) {
+		ctx := t.Context()
+		registeredFoo := Foo{Bar: "f2074b00-8679-4a33-951b-167934dd707b"}
+		ctx = RegisterValue(ctx, registeredFoo)
+
+		t.Run("Resolve2 fails with the 2nd type's error", func(t *testing.T) {
+			_, _, err := Resolve2[Foo, Bar](ctx)
+			require.ErrorIs(t, err, ErrUnregisteredDependency)
+			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxval.Bar"`, err.Error())
+		})
+	})
+
+	t.Run("when the 2nd type is registered", func(t *testing.T) {
+		ctx := t.Context()
+		registeredFoo := Bar{Foo: "3288d2ac-077f-45e8-8981-674ee1853645"}
+		ctx = RegisterValue(ctx, registeredFoo)
+
+		t.Run("Resolve2 fails with the 1st type's error", func(t *testing.T) {
+			_, _, err := Resolve2[Foo, Bar](ctx)
+			require.ErrorIs(t, err, ErrUnregisteredDependency)
+			require.Equal(t, `unable to resolve dependency: unregistered dependency "ctxval.Foo"`, err.Error())
+		})
+	})
+
+	t.Run("when all types are registered", func(t *testing.T) {
+		ctx := t.Context()
+		registeredFoo := Foo{Bar: "50dcc406-6932-427e-af98-82bfc011dd9e"}
+		registeredBar := Bar{Foo: "e8f22c3e-37a5-4ad2-8747-f5c7b4b288f7"}
+		ctx = RegisterValue(ctx, registeredFoo)
+		ctx = RegisterValue(ctx, registeredBar)
+
+		t.Run("Resolve2 fails with the 1st type's error", func(t *testing.T) {
+			foo, bar, err := Resolve2[Foo, Bar](ctx)
+			require.NoError(t, err)
+			require.Equal(t, registeredFoo.Bar, foo.Bar)
+			require.Equal(t, registeredBar.Foo, bar.Foo)
+		})
+	})
+}
+
+func TestResolve3(t *testing.T) {
+	t.Run("when all types are registered (smoke test)", func(t *testing.T) {
+		ctx := t.Context()
+		registeredString := "f3062b0d-97df-4436-a579-158f3175d62d"
+		ctx = RegisterValue(ctx, registeredString)
+		registeredFoo := Foo{Bar: "3e083275-7815-4b4c-bad7-ef59b578513a"}
+		ctx = RegisterValue(ctx, registeredFoo)
+		registeredBar := Bar{Foo: "80d9bcf2-746e-4026-aec5-f734f22fbe00"}
+		ctx = RegisterValue(ctx, registeredBar)
+
+		t.Run("Register3 succeeds with all types", func(t *testing.T) {
+			s, foo, bar, err := Resolve3[string, Foo, Bar](ctx)
+			require.NoError(t, err)
+			require.Equal(t, registeredString, s)
+			require.Equal(t, registeredFoo.Bar, foo.Bar)
+			require.Equal(t, registeredBar.Foo, bar.Foo)
+		})
+	})
+}
+
+func TestResolve4(t *testing.T) {
+	t.Run("when all types are registered (smoke test)", func(t *testing.T) {
+		ctx := t.Context()
+		registeredString := "f3062b0d-97df-4436-a579-158f3175d62d"
+		ctx = RegisterValue(ctx, registeredString)
+		registeredByte := byte(192)
+		ctx = RegisterValue(ctx, registeredByte)
+		registeredFoo := Foo{Bar: "3e083275-7815-4b4c-bad7-ef59b578513a"}
+		ctx = RegisterValue(ctx, registeredFoo)
+		registeredBar := Bar{Foo: "80d9bcf2-746e-4026-aec5-f734f22fbe00"}
+		ctx = RegisterValue(ctx, registeredBar)
+
+		t.Run("Register4 succeeds with all types", func(t *testing.T) {
+			s, b, foo, bar, err := Resolve4[string, byte, Foo, Bar](ctx)
+			require.NoError(t, err)
+			require.Equal(t, registeredString, s)
+			require.Equal(t, registeredByte, b)
+			require.Equal(t, registeredFoo.Bar, foo.Bar)
+			require.Equal(t, registeredBar.Foo, bar.Foo)
+		})
+	})
+}
