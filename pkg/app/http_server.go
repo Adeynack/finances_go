@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -10,6 +11,8 @@ import (
 	"time"
 
 	"github.com/adeynack/finances/pkg/api/apiserver"
+	"github.com/adeynack/finances/pkg/platform/ctxval"
+	"github.com/adeynack/finances/pkg/repository"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	slogctx "github.com/veqryn/slog-context"
@@ -42,22 +45,28 @@ func MustStartHttpServer() ServerShutdownFunc {
 }
 
 func mustCreateHandler() http.Handler {
-	apiImpl := &apiserver.Service{
-		DB: mustConnectDatabase(),
+	db := mustConnectDatabase()
+
+	repo, err := repository.New()
+	if err != nil {
+		panic(err)
 	}
+
+	apiImpl := &apiserver.Service{Repo: repo}
 	middlewares := []apiserver.StrictMiddlewareFunc{}
 	router := chi.NewMux()
 	router.Use(
 		middleware.RequestID,
-		RequestIDStructuredLog,
+		requestIDStructuredLog,
 		middleware.Logger,
 		middleware.Timeout(30*time.Second),
+		injectDBConnection(db),
 	)
 	strictHandler := apiserver.NewStrictHandler(apiImpl, middlewares)
 	return apiserver.HandlerFromMux(strictHandler, router)
 }
 
-func RequestIDStructuredLog(next http.Handler) http.Handler {
+func requestIDStructuredLog(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r = r.WithContext(
 			slogctx.With(
@@ -67,4 +76,15 @@ func RequestIDStructuredLog(next http.Handler) http.Handler {
 			))
 		next.ServeHTTP(w, r)
 	})
+}
+
+func injectDBConnection(db *sql.DB) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			ctx = ctxval.Register(ctx, db)
+			r = r.WithContext(ctx)
+			next.ServeHTTP(w, r)
+		})
+	}
 }
