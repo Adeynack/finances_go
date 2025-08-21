@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
@@ -23,7 +22,7 @@ func New() (R, error) {
 type implementation struct{}
 
 func (r *implementation) GetBooks(ctx context.Context) ([]apimodel.Book, error) {
-	db, err := ctxval.Resolve[*sql.DB](ctx)
+	db, err := ctxval.Resolve[DB](ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +64,7 @@ func (r *implementation) GetBooks(ctx context.Context) ([]apimodel.Book, error) 
 }
 
 func (r *implementation) GetExchangesWithSplits(ctx context.Context) ([]apimodel.ExchangeWithSplits, error) {
-	db, err := ctxval.Resolve[*sql.DB](ctx)
+	db, err := ctxval.Resolve[DB](ctx)
 	if err != nil {
 		return nil, err
 	}

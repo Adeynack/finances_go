@@ -21,7 +21,7 @@ import (
 type ServerShutdownFunc func() error
 
 func MustStartHttpServer() ServerShutdownFunc {
-	handler := mustCreateHandler()
+	handler := mustCreateHandler(false)
 
 	address := fmt.Sprintf("localhost:%s", os.Getenv("PORT"))
 	server := &http.Server{Handler: handler, Addr: address}
@@ -44,7 +44,11 @@ func MustStartHttpServer() ServerShutdownFunc {
 	return shutdown
 }
 
-func mustCreateHandler() http.Handler {
+func mustCreateTestHandler() http.Handler {
+	return mustCreateHandler(true)
+}
+
+func mustCreateHandler(testing bool) http.Handler {
 	db := mustConnectDatabase()
 
 	repo, err := repository.New()
@@ -60,7 +64,7 @@ func mustCreateHandler() http.Handler {
 		requestIDStructuredLog,
 		middleware.Logger,
 		middleware.Timeout(30*time.Second),
-		injectDBConnection(db),
+		injectDBConnection(db, testing),
 	)
 	strictHandler := apiserver.NewStrictHandler(apiImpl, middlewares)
 	return apiserver.HandlerFromMux(strictHandler, router)
@@ -78,13 +82,32 @@ func requestIDStructuredLog(next http.Handler) http.Handler {
 	})
 }
 
-func injectDBConnection(db *sql.DB) func(next http.Handler) http.Handler {
+func injectDBConnection(db *sql.DB, testing bool) func(next http.Handler) http.Handler {
+	if testing {
+		return func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ctx := r.Context()
+
+				tx, err := db.BeginTx(ctx, nil)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				defer func() {
+					err := tx.Rollback()
+					if err != nil {
+						slogctx.Error(ctx, "error rollbacking test transaction: %s", err)
+					}
+				}()
+
+				next.ServeHTTP(w, r.WithContext(ctxval.Register[repository.DB](ctx, tx)))
+			})
+		}
+	}
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			ctx = ctxval.Register(ctx, db)
-			r = r.WithContext(ctx)
-			next.ServeHTTP(w, r)
+			next.ServeHTTP(w, r.WithContext(ctxval.Register[repository.DB](r.Context(), db)))
 		})
 	}
 }
