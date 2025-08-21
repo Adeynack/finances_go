@@ -60,6 +60,19 @@ func (r *implementation) GetBooks(ctx context.Context) ([]apimodel.Book, error) 
 		}
 	})
 
+	// // Temporary code to prove the embedded transaction simulation works.
+	// db.Transaction(ctx, func(ctx context.Context, db DB) (bool, error) {
+	// 	const query = `insert into books(created_at, updated_at, default_currency_iso_code, name, owner_id) values ($1, $2, $3, $4, $5)`
+	// 	_, err := db.ExecContext(ctx, query,
+	// 		time.Now(),
+	// 		time.Now(),
+	// 		"CAD",
+	// 		fmt.Sprintf("Foo %s", uuid.NewString()),
+	// 		"569bcfdd-4056-42cd-af9c-285fa5ce92c8",
+	// 	)
+	// 	return true, err
+	// })
+
 	return booksForAPIResponse, nil
 }
 

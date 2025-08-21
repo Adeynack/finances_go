@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -49,7 +48,7 @@ func mustCreateTestHandler() http.Handler {
 }
 
 func mustCreateHandler(testing bool) http.Handler {
-	db := mustConnectDatabase()
+	db := repository.NewDB(mustConnectDatabase())
 
 	repo, err := repository.New()
 	if err != nil {
@@ -82,32 +81,26 @@ func requestIDStructuredLog(next http.Handler) http.Handler {
 	})
 }
 
-func injectDBConnection(db *sql.DB, testing bool) func(next http.Handler) http.Handler {
+func injectDBConnection(db repository.DB, testing bool) func(next http.Handler) http.Handler {
 	if testing {
 		return func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				ctx := r.Context()
-
-				tx, err := db.BeginTx(ctx, nil)
+				err := db.Transaction(ctx, func(ctx context.Context, db repository.DB) (bool, error) {
+					next.ServeHTTP(w, r.WithContext(ctxval.Register(ctx, db)))
+					return false, nil
+				})
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
-				defer func() {
-					err := tx.Rollback()
-					if err != nil {
-						slogctx.Error(ctx, "error rollbacking test transaction: %s", err)
-					}
-				}()
-
-				next.ServeHTTP(w, r.WithContext(ctxval.Register[repository.DB](ctx, tx)))
 			})
 		}
 	}
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			next.ServeHTTP(w, r.WithContext(ctxval.Register[repository.DB](r.Context(), db)))
+			next.ServeHTTP(w, r.WithContext(ctxval.Register(r.Context(), db)))
 		})
 	}
 }
