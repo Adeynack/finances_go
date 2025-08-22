@@ -9,15 +9,43 @@ import (
 	"github.com/google/uuid"
 )
 
+var (
+	ErrNoTransaction = errors.New("not currently in a transaction")
+)
+
 type DB interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 	PrepareContext(ctx context.Context, query string) (*sql.Stmt, error)
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
-	Transaction(ctx context.Context, fn InTransactionFn) error
+	// Transaction(ctx context.Context, fn InTransactionFn) error
+	BeginTx(ctx context.Context) (DB, error)
+	Rollback() error
+	Commit() error
 }
 
 type InTransactionFn func(ctx context.Context, db DB) (bool, error)
+
+func InTransaction(ctx context.Context, db DB, fn InTransactionFn) error {
+	db, err := db.BeginTx(ctx)
+	if err != nil {
+		return err
+	}
+	defer db.Rollback()
+
+	shouldCommit, err := fn(ctx, db)
+	if err != nil {
+		return err
+	}
+	if shouldCommit {
+		err = db.Commit()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 func NewDB(db *sql.DB) DB {
 	return &sqlDbWrapper{db: db}
@@ -43,32 +71,23 @@ func (d *sqlDbWrapper) QueryRowContext(ctx context.Context, query string, args .
 	return d.db.QueryRowContext(ctx, query, args...)
 }
 
-func (d *sqlDbWrapper) Transaction(ctx context.Context, fn InTransactionFn) (err error) {
+func (d *sqlDbWrapper) BeginTx(ctx context.Context) (DB, error) {
 	tx, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil
+		return d, err // important to return the actual DB in case usage is `db, err = db.BeginTx(ctx)`
 	}
-
-	defer func() {
-		defErr := tx.Rollback()
-		err = errors.Join(err, defErr)
-	}()
 
 	newDb := &dbInTransaction{tx: tx}
 
-	shouldCommit, err := fn(ctx, newDb)
-	if err != nil {
-		return err
-	}
+	return newDb, nil
+}
 
-	if shouldCommit {
-		err = tx.Commit()
-		if err != nil {
-			return err
-		}
-	}
+func (d *sqlDbWrapper) Rollback() error {
+	return ErrNoTransaction
+}
 
-	return nil
+func (d *sqlDbWrapper) Commit() error {
+	return ErrNoTransaction
 }
 
 type dbInTransaction struct {
@@ -91,34 +110,91 @@ func (d *dbInTransaction) QueryRowContext(ctx context.Context, query string, arg
 	return d.tx.QueryRowContext(ctx, query, args...)
 }
 
-func (d *dbInTransaction) Transaction(ctx context.Context, fn InTransactionFn) error {
+func (d *dbInTransaction) BeginTx(ctx context.Context) (DB, error) {
+	return createSavepointDB(ctx, d)
+}
+
+func (d *dbInTransaction) Rollback() error {
+	return d.tx.Rollback()
+}
+
+func (d *dbInTransaction) Commit() error {
+	return d.tx.Commit()
+}
+
+func createSavepointDB(ctx context.Context, baseDb DB) (DB, error) {
 	savepointUuid, err := uuid.NewV7()
 	if err != nil {
-		return err
+		// important to return the actual DB in case usage is `db, err = db.BeginTx(ctx)`
+		return baseDb, fmt.Errorf("creating a new savepoint unique ID: %w", err)
 	}
 
-	savepointName := "sp_" + savepointUuid.String()
+	newDb := &dbInSavepoint{
+		ctx:           ctx,
+		baseDb:        baseDb,
+		savepointName: "sp_" + savepointUuid.String(),
+	}
 
-	_, err = d.tx.ExecContext(ctx, fmt.Sprintf("SAVEPOINT %q", savepointName))
+	_, err = baseDb.ExecContext(ctx, fmt.Sprintf("SAVEPOINT %q", newDb.savepointName))
 	if err != nil {
-		return err
+		// important to return the actual DB in case usage is `db, err = db.BeginTx(ctx)`
+		return baseDb, fmt.Errorf("executing savepoint creation: %w", err)
 	}
-	shouldCommit := false
 
-	defer func() {
-		var derEff error
-		if shouldCommit {
-			_, derEff = d.tx.ExecContext(ctx, fmt.Sprintf("RELEASE SAVEPOINT %q", savepointName))
-		} else {
-			_, derEff = d.tx.ExecContext(ctx, fmt.Sprintf("ROLLBACK TO SAVEPOINT %q", savepointName))
-		}
-		err = errors.Join(err, derEff)
-	}()
+	return newDb, nil
+}
 
-	shouldCommit, err = fn(ctx, d)
+type dbInSavepoint struct {
+	baseDb        DB
+	savepointName string
+	ctx           context.Context
+	closed        bool
+}
+
+func (d *dbInSavepoint) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	return d.baseDb.ExecContext(ctx, query, args...)
+}
+
+func (d *dbInSavepoint) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
+	return d.baseDb.PrepareContext(ctx, query)
+}
+
+func (d *dbInSavepoint) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	return d.baseDb.QueryContext(ctx, query, args...)
+}
+
+func (d *dbInSavepoint) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
+	return d.baseDb.QueryRowContext(ctx, query, args...)
+}
+
+func (d *dbInSavepoint) BeginTx(ctx context.Context) (DB, error) {
+	return createSavepointDB(ctx, d)
+}
+
+func (d *dbInSavepoint) Rollback() error {
+	if d.closed {
+		return nil
+	}
+
+	_, err := d.baseDb.ExecContext(d.ctx, fmt.Sprintf("ROLLBACK TO SAVEPOINT %q", d.savepointName))
 	if err != nil {
-		return err
+		return fmt.Errorf("executing savepoint %q release (commit): %w", d.savepointName, err)
 	}
 
+	d.closed = true
+	return nil
+}
+
+func (d *dbInSavepoint) Commit() error {
+	if d.closed {
+		return nil
+	}
+
+	_, err := d.baseDb.ExecContext(d.ctx, fmt.Sprintf("RELEASE SAVEPOINT %q", d.savepointName))
+	if err != nil {
+		return fmt.Errorf("executing savepoint %q rollback: %w", d.savepointName, err)
+	}
+
+	d.closed = true
 	return nil
 }

@@ -86,14 +86,14 @@ func injectDBConnection(db repository.DB, testing bool) func(next http.Handler) 
 		return func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				ctx := r.Context()
-				err := db.Transaction(ctx, func(ctx context.Context, db repository.DB) (bool, error) {
-					next.ServeHTTP(w, r.WithContext(ctxval.Register(ctx, db)))
-					return false, nil
-				})
+				db, err := db.BeginTx(ctx)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
+
+				defer db.Rollback()
+				next.ServeHTTP(w, r.WithContext(ctxval.Register(ctx, db)))
 			})
 		}
 	}

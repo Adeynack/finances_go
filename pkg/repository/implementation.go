@@ -10,6 +10,7 @@ import (
 	"github.com/adeynack/finances/pkg/repository/gen/finances/public/model"
 	. "github.com/adeynack/finances/pkg/repository/gen/finances/public/table"
 	. "github.com/go-jet/jet/v2/postgres"
+	"github.com/google/uuid"
 	"github.com/oapi-codegen/runtime/types"
 	"github.com/samber/lo"
 	slogctx "github.com/veqryn/slog-context"
@@ -60,18 +61,18 @@ func (r *implementation) GetBooks(ctx context.Context) ([]apimodel.Book, error) 
 		}
 	})
 
-	// // Temporary code to prove the embedded transaction simulation works.
-	// db.Transaction(ctx, func(ctx context.Context, db DB) (bool, error) {
-	// 	const query = `insert into books(created_at, updated_at, default_currency_iso_code, name, owner_id) values ($1, $2, $3, $4, $5)`
-	// 	_, err := db.ExecContext(ctx, query,
-	// 		time.Now(),
-	// 		time.Now(),
-	// 		"CAD",
-	// 		fmt.Sprintf("Foo %s", uuid.NewString()),
-	// 		"569bcfdd-4056-42cd-af9c-285fa5ce92c8",
-	// 	)
-	// 	return true, err
-	// })
+	// Temporary code to prove the embedded transaction simulation works.
+	InTransaction(ctx, db, func(ctx context.Context, db DB) (bool, error) {
+		const query = `insert into books(created_at, updated_at, default_currency_iso_code, name, owner_id) values ($1, $2, $3, $4, $5)`
+		_, err := db.ExecContext(ctx, query,
+			time.Now(),
+			time.Now(),
+			"CAD",
+			fmt.Sprintf("Foo %s", uuid.NewString()),
+			"569bcfdd-4056-42cd-af9c-285fa5ce92c8",
+		)
+		return true, err
+	})
 
 	return booksForAPIResponse, nil
 }
