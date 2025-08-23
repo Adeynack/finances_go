@@ -5,40 +5,60 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/google/uuid"
 )
 
 var (
-	ErrNoTransaction = errors.New("not currently in a transaction")
+	ErrTransactionClosed = errors.New("sql: transaction has already been committed or rolled back")
 )
 
 type DB interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 	PrepareContext(ctx context.Context, query string) (*sql.Stmt, error)
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
-	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
-	// Transaction(ctx context.Context, fn InTransactionFn) error
-	BeginTx(ctx context.Context) (DB, error)
-	Rollback() error
-	Commit() error
+	QueryRowContext(ctx context.Context, query string, args ...any) Row
+	BeginTx(ctx context.Context) (DB, TransactionCloser, error)
 }
 
-type InTransactionFn func(ctx context.Context, db DB) (bool, error)
+type TransactionCloser interface {
+	Commit() error
+	Rollback() error
+}
 
-func InTransaction(ctx context.Context, db DB, fn InTransactionFn) error {
-	db, err := db.BeginTx(ctx)
+type InTransactionFunc func(ctx context.Context, db DB) (bool, error)
+
+type Row interface {
+	Scan(dest ...any) error
+	Err() error
+}
+
+type errorRow struct {
+	err error
+}
+
+func (r *errorRow) Scan(dest ...any) error {
+	return r.err
+}
+
+func (r *errorRow) Err() error {
+	return r.err
+}
+
+func InTransaction(ctx context.Context, db DB, fn InTransactionFunc) error {
+	db, tx, err := db.BeginTx(ctx)
 	if err != nil {
 		return err
 	}
-	defer db.Rollback()
+	defer tx.Rollback()
 
 	shouldCommit, err := fn(ctx, db)
 	if err != nil {
 		return err
 	}
 	if shouldCommit {
-		err = db.Commit()
+		err = tx.Commit()
 		if err != nil {
 			return err
 		}
@@ -67,27 +87,19 @@ func (d *sqlDbWrapper) QueryContext(ctx context.Context, query string, args ...a
 	return d.db.QueryContext(ctx, query, args...)
 }
 
-func (d *sqlDbWrapper) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
+func (d *sqlDbWrapper) QueryRowContext(ctx context.Context, query string, args ...any) Row {
 	return d.db.QueryRowContext(ctx, query, args...)
 }
 
-func (d *sqlDbWrapper) BeginTx(ctx context.Context) (DB, error) {
+func (d *sqlDbWrapper) BeginTx(ctx context.Context) (DB, TransactionCloser, error) {
 	tx, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
-		return d, err // important to return the actual DB in case usage is `db, err = db.BeginTx(ctx)`
+		return d, nil, err // important to return the actual DB in case usage is `db, err = db.BeginTx(ctx)`
 	}
 
 	newDb := &dbInTransaction{tx: tx}
 
-	return newDb, nil
-}
-
-func (d *sqlDbWrapper) Rollback() error {
-	return ErrNoTransaction
-}
-
-func (d *sqlDbWrapper) Commit() error {
-	return ErrNoTransaction
+	return newDb, newDb, nil
 }
 
 type dbInTransaction struct {
@@ -106,11 +118,11 @@ func (d *dbInTransaction) QueryContext(ctx context.Context, query string, args .
 	return d.tx.QueryContext(ctx, query, args...)
 }
 
-func (d *dbInTransaction) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
+func (d *dbInTransaction) QueryRowContext(ctx context.Context, query string, args ...any) Row {
 	return d.tx.QueryRowContext(ctx, query, args...)
 }
 
-func (d *dbInTransaction) BeginTx(ctx context.Context) (DB, error) {
+func (d *dbInTransaction) BeginTx(ctx context.Context) (DB, TransactionCloser, error) {
 	return createSavepointDB(ctx, d)
 }
 
@@ -122,11 +134,11 @@ func (d *dbInTransaction) Commit() error {
 	return d.tx.Commit()
 }
 
-func createSavepointDB(ctx context.Context, baseDb DB) (DB, error) {
+func createSavepointDB(ctx context.Context, baseDb DB) (DB, TransactionCloser, error) {
 	savepointUuid, err := uuid.NewV7()
 	if err != nil {
 		// important to return the actual DB in case usage is `db, err = db.BeginTx(ctx)`
-		return baseDb, fmt.Errorf("creating a new savepoint unique ID: %w", err)
+		return baseDb, nil, fmt.Errorf("creating a new savepoint unique ID: %w", err)
 	}
 
 	newDb := &dbInSavepoint{
@@ -138,40 +150,79 @@ func createSavepointDB(ctx context.Context, baseDb DB) (DB, error) {
 	_, err = baseDb.ExecContext(ctx, fmt.Sprintf("SAVEPOINT %q", newDb.savepointName))
 	if err != nil {
 		// important to return the actual DB in case usage is `db, err = db.BeginTx(ctx)`
-		return baseDb, fmt.Errorf("executing savepoint creation: %w", err)
+		return baseDb, nil, fmt.Errorf("executing savepoint creation: %w", err)
 	}
 
-	return newDb, nil
+	return newDb, newDb, nil
 }
 
 type dbInSavepoint struct {
 	baseDb        DB
 	savepointName string
 	ctx           context.Context
+	lock          sync.RWMutex
 	closed        bool
 }
 
 func (d *dbInSavepoint) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	d.lock.RLock()
+	defer d.lock.RUnlock()
+
+	if d.closed {
+		return nil, ErrTransactionClosed
+	}
+
 	return d.baseDb.ExecContext(ctx, query, args...)
 }
 
 func (d *dbInSavepoint) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
+	d.lock.RLock()
+	defer d.lock.RUnlock()
+
+	if d.closed {
+		return nil, ErrTransactionClosed
+	}
+
 	return d.baseDb.PrepareContext(ctx, query)
 }
 
 func (d *dbInSavepoint) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	d.lock.RLock()
+	defer d.lock.RUnlock()
+
+	if d.closed {
+		return nil, ErrTransactionClosed
+	}
+
 	return d.baseDb.QueryContext(ctx, query, args...)
 }
 
-func (d *dbInSavepoint) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
+func (d *dbInSavepoint) QueryRowContext(ctx context.Context, query string, args ...any) Row {
+	d.lock.RLock()
+	defer d.lock.RUnlock()
+
+	if d.closed {
+		return &errorRow{err: ErrTransactionClosed}
+	}
+
 	return d.baseDb.QueryRowContext(ctx, query, args...)
 }
 
-func (d *dbInSavepoint) BeginTx(ctx context.Context) (DB, error) {
+func (d *dbInSavepoint) BeginTx(ctx context.Context) (DB, TransactionCloser, error) {
+	d.lock.RLock()
+	defer d.lock.RUnlock()
+
+	if d.closed {
+		return nil, nil, ErrTransactionClosed
+	}
+
 	return createSavepointDB(ctx, d)
 }
 
 func (d *dbInSavepoint) Rollback() error {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
 	if d.closed {
 		return nil
 	}
@@ -186,6 +237,9 @@ func (d *dbInSavepoint) Rollback() error {
 }
 
 func (d *dbInSavepoint) Commit() error {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
 	if d.closed {
 		return nil
 	}
