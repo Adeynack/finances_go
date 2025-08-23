@@ -26,10 +26,10 @@ const (
 type Book struct {
 	CreatedAt              time.Time `json:"created_at"`
 	DefaultCurrencyIsoCode string    `json:"default_currency_iso_code"`
-	Id                     string    `json:"id"`
+	Id                     ID        `json:"id"`
 	Name                   string    `json:"name"`
 	OwnerDisplayName       string    `json:"owner_display_name"`
-	OwnerId                string    `json:"owner_id"`
+	OwnerId                ID        `json:"owner_id"`
 	UpdatedAt              time.Time `json:"updated_at"`
 }
 
@@ -38,7 +38,7 @@ type BookProperties struct {
 	DefaultCurrencyIsoCode string `json:"default_currency_iso_code"`
 	Name                   string `json:"name"`
 	OwnerDisplayName       string `json:"owner_display_name"`
-	OwnerId                string `json:"owner_id"`
+	OwnerId                ID     `json:"owner_id"`
 }
 
 // ExchangeProperties defines model for ExchangeProperties.
@@ -47,7 +47,7 @@ type ExchangeProperties struct {
 	Date        openapi_types.Date `json:"date"`
 	Description string             `json:"description"`
 	Memo        *string            `json:"memo,omitempty"`
-	RegisterId  string             `json:"register_id"`
+	RegisterId  ID                 `json:"register_id"`
 	Status      ExchangeStatus     `json:"status"`
 }
 
@@ -60,9 +60,9 @@ type ExchangeWithSplits struct {
 	CreatedAt   time.Time          `json:"created_at"`
 	Date        openapi_types.Date `json:"date"`
 	Description string             `json:"description"`
-	Id          string             `json:"id"`
+	Id          ID                 `json:"id"`
 	Memo        *string            `json:"memo,omitempty"`
-	RegisterId  string             `json:"register_id"`
+	RegisterId  ID                 `json:"register_id"`
 	Splits      []Split            `json:"splits"`
 	Status      ExchangeStatus     `json:"status"`
 	UpdatedAt   time.Time          `json:"updated_at"`
@@ -71,21 +71,24 @@ type ExchangeWithSplits struct {
 // ExistingResource defines model for ExistingResource.
 type ExistingResource struct {
 	CreatedAt time.Time `json:"created_at"`
-	Id        string    `json:"id"`
+	Id        ID        `json:"id"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+// ID defines model for ID.
+type ID = openapi_types.UUID
 
 // ServerHealthStatus defines model for ServerHealthStatus.
 type ServerHealthStatus string
 
 // Split defines model for Split.
 type Split struct {
-	Amount                int            `json:"amount"`
-	CounterpartAmount     *int           `json:"counterpart_amount,omitempty"`
+	Amount                int64          `json:"amount"`
+	CounterpartAmount     *int64         `json:"counterpart_amount,omitempty"`
 	CreatedAt             time.Time      `json:"created_at"`
-	DestinationRegisterId string         `json:"destination_register_id"`
-	ExchangeId            string         `json:"exchange_id"`
-	Id                    string         `json:"id"`
+	DestinationRegisterId ID             `json:"destination_register_id"`
+	ExchangeId            ID             `json:"exchange_id"`
+	Id                    ID             `json:"id"`
 	Memo                  *string        `json:"memo,omitempty"`
 	Status                ExchangeStatus `json:"status"`
 	UpdatedAt             time.Time      `json:"updated_at"`
@@ -93,10 +96,10 @@ type Split struct {
 
 // SplitProperties defines model for SplitProperties.
 type SplitProperties struct {
-	Amount                int            `json:"amount"`
-	CounterpartAmount     *int           `json:"counterpart_amount,omitempty"`
-	DestinationRegisterId string         `json:"destination_register_id"`
-	ExchangeId            string         `json:"exchange_id"`
+	Amount                int64          `json:"amount"`
+	CounterpartAmount     *int64         `json:"counterpart_amount,omitempty"`
+	DestinationRegisterId ID             `json:"destination_register_id"`
+	ExchangeId            ID             `json:"exchange_id"`
 	Memo                  *string        `json:"memo,omitempty"`
 	Status                ExchangeStatus `json:"status"`
 }

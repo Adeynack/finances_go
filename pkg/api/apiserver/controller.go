@@ -5,6 +5,7 @@ import (
 
 	"github.com/adeynack/finances/pkg/api/apimodel"
 	"github.com/adeynack/finances/pkg/repository"
+	"github.com/google/uuid"
 )
 
 type Service struct {
@@ -25,6 +26,18 @@ func (s *Service) GetBooks(ctx context.Context, request GetBooksRequestObject) (
 	}
 
 	return GetBooks200JSONResponse{Books: booksForAPIResponse}, nil
+}
+
+func (s *Service) GetBook(ctx context.Context, request GetBookRequestObject) (GetBookResponseObject, error) {
+	book, err := s.Repo.GetBookByID(ctx, uuid.MustParse(request.BookId))
+	if err != nil {
+		return nil, err
+	}
+	if book == nil {
+		return GetBook404Response{}, nil
+	}
+
+	return GetBook200JSONResponse{Book: book}, nil
 }
 
 // GetExchanges implements StrictServerInterface.

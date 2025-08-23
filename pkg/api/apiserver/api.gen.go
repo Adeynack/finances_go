@@ -26,6 +26,9 @@ type ServerInterface interface {
 	// (GET /books)
 	GetBooks(w http.ResponseWriter, r *http.Request, params GetBooksParams)
 
+	// (GET /books/{bookId})
+	GetBook(w http.ResponseWriter, r *http.Request, bookId string)
+
 	// (GET /exchanges)
 	GetExchanges(w http.ResponseWriter, r *http.Request)
 
@@ -39,6 +42,11 @@ type Unimplemented struct{}
 
 // (GET /books)
 func (_ Unimplemented) GetBooks(w http.ResponseWriter, r *http.Request, params GetBooksParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /books/{bookId})
+func (_ Unimplemented) GetBook(w http.ResponseWriter, r *http.Request, bookId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -79,6 +87,31 @@ func (siw *ServerInterfaceWrapper) GetBooks(w http.ResponseWriter, r *http.Reque
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetBooks(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetBook operation middleware
+func (siw *ServerInterfaceWrapper) GetBook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "bookId" -------------
+	var bookId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "bookId", chi.URLParam(r, "bookId"), &bookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: false})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "bookId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBook(w, r, bookId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -233,6 +266,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/books", wrapper.GetBooks)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/books/{bookId}", wrapper.GetBook)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/exchanges", wrapper.GetExchanges)
 	})
 	r.Group(func(r chi.Router) {
@@ -259,6 +295,33 @@ func (response GetBooks200JSONResponse) VisitGetBooksResponse(w http.ResponseWri
 	w.WriteHeader(200)
 
 	return json.NewEncoder(w).Encode(response)
+}
+
+type GetBookRequestObject struct {
+	BookId string `json:"bookId,omitempty"`
+}
+
+type GetBookResponseObject interface {
+	VisitGetBookResponse(w http.ResponseWriter) error
+}
+
+type GetBook200JSONResponse struct {
+	Book *externalRef0.Book `json:"book,omitempty"`
+}
+
+func (response GetBook200JSONResponse) VisitGetBookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetBook404Response struct {
+}
+
+func (response GetBook404Response) VisitGetBookResponse(w http.ResponseWriter) error {
+	w.WriteHeader(404)
+	return nil
 }
 
 type GetExchangesRequestObject struct {
@@ -303,6 +366,9 @@ type StrictServerInterface interface {
 
 	// (GET /books)
 	GetBooks(ctx context.Context, request GetBooksRequestObject) (GetBooksResponseObject, error)
+
+	// (GET /books/{bookId})
+	GetBook(ctx context.Context, request GetBookRequestObject) (GetBookResponseObject, error)
 
 	// (GET /exchanges)
 	GetExchanges(ctx context.Context, request GetExchangesRequestObject) (GetExchangesResponseObject, error)
@@ -359,6 +425,32 @@ func (sh *strictHandler) GetBooks(w http.ResponseWriter, r *http.Request, params
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetBooksResponseObject); ok {
 		if err := validResponse.VisitGetBooksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetBook operation middleware
+func (sh *strictHandler) GetBook(w http.ResponseWriter, r *http.Request, bookId string) {
+	var request GetBookRequestObject
+
+	request.BookId = bookId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetBook(ctx, request.(GetBookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetBook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetBookResponseObject); ok {
+		if err := validResponse.VisitGetBookResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -1,6 +1,9 @@
 openapi: "3.0.4"
 components:
   schemas:
+    ID:
+      type: string
+      format: uuid
     ExistingResource:
       type: object
       required:
@@ -9,7 +12,7 @@ components:
         - updated_at
       properties:
         id:
-          type: string
+          $ref: "#/components/schemas/ID"
         created_at:
           type: string
           format: date-time
@@ -34,7 +37,7 @@ components:
         name:
           type: string
         owner_id:
-          type: string
+          $ref: "#/components/schemas/ID"
         owner_display_name:
           type: string
         default_currency_iso_code:
@@ -79,7 +82,7 @@ components:
           type: string
           format: date
         register_id:
-          type: string
+          $ref: "#/components/schemas/ID"
         cheque:
           type: string
         description:
@@ -104,13 +107,15 @@ components:
         - status
       properties:
         exchange_id:
-          type: string
+          $ref: "#/components/schemas/ID"
         destination_register_id:
-          type: string
+          $ref: "#/components/schemas/ID"
         amount:
           type: integer
+          x-go-type: int64
         counterpart_amount:
           type: integer
+          x-go-type: int64
         memo:
           type: string
         status:

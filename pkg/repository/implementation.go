@@ -34,7 +34,7 @@ func (r *implementation) GetBooks(ctx context.Context) ([]apimodel.Book, error) 
 	).FROM(
 		Books.
 			INNER_JOIN(Users, Users.ID.EQ(Books.OwnerID)),
-	).ORDER_BY(Books.Name)
+	).ORDER_BY(Books.Name, Books.ID)
 
 	type BooksWithOwner struct {
 		model.Books
@@ -53,9 +53,9 @@ func (r *implementation) GetBooks(ctx context.Context) ([]apimodel.Book, error) 
 		return apimodel.Book{
 			CreatedAt:              b.CreatedAt,
 			DefaultCurrencyIsoCode: b.DefaultCurrencyIsoCode,
-			Id:                     b.ID.String(),
+			Id:                     b.ID,
 			Name:                   b.Name,
-			OwnerId:                b.OwnerID.String(),
+			OwnerId:                b.OwnerID,
 			OwnerDisplayName:       b.Owner.DisplayName,
 			UpdatedAt:              b.UpdatedAt,
 		}
@@ -75,6 +75,43 @@ func (r *implementation) GetBooks(ctx context.Context) ([]apimodel.Book, error) 
 	})
 
 	return booksForAPIResponse, nil
+}
+
+func (r *implementation) GetBookByID(ctx context.Context, bookId uuid.UUID) (*apimodel.Book, error) {
+	db, err := ctxval.Resolve[DB](ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	stmt := SELECT(
+		Books.AllColumns,
+		Users.DisplayName.AS("user_display_name"),
+	).FROM(
+		Books.
+			INNER_JOIN(Users, Users.ID.EQ(Books.OwnerID)),
+	).
+		WHERE(
+			Books.ID.EQ(UUID(bookId)),
+		)
+
+	var book struct {
+		model.Books
+		UserDisplayName string
+	}
+	err = stmt.QueryContext(ctx, db, &book)
+	if err != nil {
+		return nil, fmt.Errorf("fetching the book by its ID: %w", err)
+	}
+
+	return &apimodel.Book{
+		CreatedAt:              book.CreatedAt,
+		DefaultCurrencyIsoCode: book.DefaultCurrencyIsoCode,
+		Id:                     book.ID,
+		Name:                   book.Name,
+		OwnerDisplayName:       book.UserDisplayName,
+		OwnerId:                book.OwnerID,
+		UpdatedAt:              book.UpdatedAt,
+	}, nil
 }
 
 func (r *implementation) GetExchangesWithSplits(ctx context.Context) ([]apimodel.ExchangeWithSplits, error) {
@@ -108,20 +145,20 @@ func (r *implementation) GetExchangesWithSplits(ctx context.Context) ([]apimodel
 			CreatedAt:   e.CreatedAt,
 			Date:        types.Date{Time: e.Date},
 			Description: e.Description,
-			Id:          e.ID.String(),
+			Id:          e.ID,
 			Memo:        e.Memo,
-			RegisterId:  e.RegisterID.String(),
+			RegisterId:  e.RegisterID,
 			Splits: lo.Map(e.Splits, func(s model.Splits, _ int) apimodel.Split {
 				return apimodel.Split{
-					Amount:                int(s.Amount),
-					CounterpartAmount:     nil,
-					CreatedAt:             time.Time{},
-					DestinationRegisterId: "",
-					ExchangeId:            "",
-					Id:                    "",
-					Memo:                  new(string),
-					Status:                "",
-					UpdatedAt:             time.Time{},
+					Amount:                s.Amount,
+					CounterpartAmount:     s.CounterpartAmount,
+					CreatedAt:             s.CreatedAt,
+					DestinationRegisterId: s.DestinationRegisterID,
+					ExchangeId:            s.ExchangeID,
+					Id:                    s.ID,
+					Memo:                  s.Memo,
+					Status:                apimodel.ExchangeStatus(s.Status),
+					UpdatedAt:             s.UpdatedAt,
 				}
 			}),
 			Status:    apimodel.ExchangeStatus(e.Status),

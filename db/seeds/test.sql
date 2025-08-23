@@ -3,7 +3,8 @@ INSERT INTO "public"."users" ("id", "created_at", "updated_at", "email", "encryp
 ('5b2fb2a0-bdc1-454d-af50-067e9b9e9dd3', '2025-08-14 21:46:53.577442', '2025-08-14 21:46:53.577442', 'linda@example.com', 'qwe', 'f', 'Linda');
 
 INSERT INTO "public"."books" ("id", "created_at", "updated_at", "name", "owner_id", "default_currency_iso_code") VALUES
-('8d8666c0-016f-49fb-8f59-4150a822ffb2', '2025-08-14 21:47:58.211393', '2025-08-14 21:47:58.211393', 'Joe''s Book', '569bcfdd-4056-42cd-af9c-285fa5ce92c8', 'EUR');
+('8d8666c0-016f-49fb-8f59-4150a822ffb2', '2025-08-14 21:47:58.211393', '2025-08-14 21:47:58.211393', 'Joe''s Book', '569bcfdd-4056-42cd-af9c-285fa5ce92c8', 'EUR'),
+('5da6e20f-eecd-456b-a8dd-ae1a63d0268e', '2025-08-24 00:20:00.000000', '2025-08-24 00:20:00.000000', 'Foo, the Book', '569bcfdd-4056-42cd-af9c-285fa5ce92c8', 'USD');
 
 INSERT INTO "public"."registers" ("id", "created_at", "updated_at", "name", "type", "book_id", "parent_id", "starts_at", "expires_at", "currency_iso_code", "notes", "initial_balance", "active", "default_category", "institution_name", "account_number", "iban", "annual_interest_rate", "credit_limit", "card_number") VALUES
 ('7625b655-732d-49e0-a86b-43994ea89359', '2025-08-14 21:50:02.935459', '2025-08-14 21:50:02.935459', 'Joe''s Credit Card', 'Card', '8d8666c0-016f-49fb-8f59-4150a822ffb2', NULL, '2025-08-14', NULL, 'EUR', NULL, 0, 't', NULL, NULL, NULL, NULL, NULL, NULL, NULL),

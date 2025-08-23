@@ -7,6 +7,7 @@ servers:
 paths:
   /books:
     get:
+      operationId: GetBooks
       parameters:
         - name: limit
           in: query
@@ -28,6 +29,26 @@ paths:
                     type: array
                     items:
                       $ref: "model.openapi.yaml#/components/schemas/Book"
+  "/books/{bookId}":
+    parameters:
+      - name: bookId
+        in: path
+        schema:
+          type: string
+    get:
+      operationId: GetBook
+      responses:
+        "200":
+          description: OK
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  book:
+                    $ref: "model.openapi.yaml#/components/schemas/Book"
+        "404":
+          description: Not Found
   /exchanges:
     get:
       responses:
@@ -44,7 +65,6 @@ paths:
                     type: array
                     items:
                       $ref: "model.openapi.yaml#/components/schemas/ExchangeWithSplits"
-
   /health:
     get:
       responses:
