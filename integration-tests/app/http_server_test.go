@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/adeynack/finances/pkg/api/apimodel"
 	"github.com/adeynack/finances/pkg/api/apiserver"
@@ -26,6 +27,7 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("POST /books", func(t *testing.T) {
+		startTime := time.Now()
 		handler := tests.CreateTestAPIHandler(t)
 		requestBody := strings.NewReader(`{
 			"book": {
@@ -42,10 +44,10 @@ func TestHttpServer(t *testing.T) {
 		require.Equal(t, http.StatusCreated, response.Code, responseBody)
 
 		var body apiserver.CreateBook201JSONResponse
-		require.NoError(t, json.Unmarshal(response.Body.Bytes(), &body))
-		require.NotEmpty(t, body.Book.Id, responseBody)
-		require.NotEmpty(t, body.Book.CreatedAt, responseBody)
-		require.NotEmpty(t, body.Book.UpdatedAt, responseBody)
+		require.NoError(t, json.Unmarshal(response.Body.Bytes(), &body), responseBody)
+		require.NotZero(t, body.Book.Id, "expecting an ID to be set")
+		require.GreaterOrEqual(t, body.Book.CreatedAt, startTime, "expecting CreatedAt to be set to book creation time")
+		require.GreaterOrEqual(t, body.Book.UpdatedAt, startTime, "expecting CreatedAt to be set to book creation time")
 		expectedBody := apiserver.CreateBook201JSONResponse{
 			Book: apimodel.Book{
 				Id:                     body.Book.Id,
