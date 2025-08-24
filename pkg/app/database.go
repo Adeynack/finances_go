@@ -9,7 +9,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func mustConnectDatabase() *sql.DB {
+func MustConnectDatabase() *sql.DB {
 	dsn, dsnPresent := os.LookupEnv("DATABASE_URL")
 	if !dsnPresent {
 		panic(errors.New("environment DATABASE_URL must be set"))

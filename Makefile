@@ -39,12 +39,16 @@ generate_api_code_watch:
 clean:
 	go tool godotenv go clean -cache -testcache
 
-.PHONY: test
-test:
-	go tool godotenv -f .env.test go test ./... -v -count=1 -json | go tool gotestfmt
+.PHONY: test-unit
+test-unit:
+	go tool godotenv -f .env.test go test ./cmd/... ./pkg/... -v -count=1 -json | go tool gotestfmt
+
+.PHONY: test-integration
+test-integration:
+	go tool godotenv -f .env.test go test ./tests/... -v -count=1 -json | go tool gotestfmt
 
 .PHONY: ct
-ct: clean test
+ct: clean test-unit test-integration
 
 .PHONY: lint
 lint: build

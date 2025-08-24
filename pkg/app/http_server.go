@@ -20,8 +20,8 @@ import (
 type ServerShutdownFunc func() error
 
 func MustStartHttpServer() ServerShutdownFunc {
-	db := repository.NewDB(mustConnectDatabase())
-	handler := mustCreateHandler(db)
+	db := repository.NewDB(MustConnectDatabase())
+	handler := MustCreateHandler(db)
 
 	address := fmt.Sprintf("localhost:%s", os.Getenv("PORT"))
 	server := &http.Server{Handler: handler, Addr: address}
@@ -44,7 +44,7 @@ func MustStartHttpServer() ServerShutdownFunc {
 	return shutdown
 }
 
-func mustCreateHandler(db repository.DB) http.Handler {
+func MustCreateHandler(db repository.DB) http.Handler {
 	repo, err := repository.New()
 	if err != nil {
 		panic(err)

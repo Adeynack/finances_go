@@ -9,26 +9,14 @@ import (
 
 	"github.com/adeynack/finances/pkg/api/apimodel"
 	"github.com/adeynack/finances/pkg/api/apiserver"
-	"github.com/adeynack/finances/pkg/repository"
+	"github.com/adeynack/finances/tests"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
-func mustCreateTestHandler(t *testing.T) http.Handler {
-	db := repository.NewDB(mustConnectDatabase())
-	db, tx, err := db.BeginTx(t.Context())
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		_ = tx.Rollback()
-	})
-
-	return mustCreateHandler(db)
-}
-
 func TestHttpServer(t *testing.T) {
 	t.Run("GET /health", func(t *testing.T) {
-		handler := mustCreateTestHandler(t)
+		handler := tests.CreateTestAPIHandler(t)
 		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/health", nil)
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
@@ -38,7 +26,7 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("POST /books", func(t *testing.T) {
-		handler := mustCreateTestHandler(t)
+		handler := tests.CreateTestAPIHandler(t)
 		requestBody := strings.NewReader(`{
 			"book": {
 				"name": "My all new shiny book",
@@ -73,7 +61,7 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("GET /books", func(t *testing.T) {
-		handler := mustCreateTestHandler(t)
+		handler := tests.CreateTestAPIHandler(t)
 		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/books", nil)
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
@@ -105,7 +93,7 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("GET /book/:id", func(t *testing.T) {
-		handler := mustCreateTestHandler(t)
+		handler := tests.CreateTestAPIHandler(t)
 		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/books/8d8666c0-016f-49fb-8f59-4150a822ffb2", nil)
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
@@ -126,7 +114,7 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("GET /exchanges", func(t *testing.T) {
-		handler := mustCreateTestHandler(t)
+		handler := tests.CreateTestAPIHandler(t)
 		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/exchanges", nil)
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
