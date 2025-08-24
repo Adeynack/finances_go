@@ -29,6 +29,30 @@ paths:
                     type: array
                     items:
                       $ref: "model.openapi.yaml#/components/schemas/Book"
+    post:
+      operationId: CreateBook
+      requestBody:
+        content:
+          "application/json":
+            schema:
+              type: object
+              required:
+                - book
+              properties:
+                book:
+                  $ref: "model.openapi.yaml#/components/schemas/BookProperties"
+      responses:
+        "201":
+          description: Created
+          content:
+            "application/json":
+              schema:
+                type: object
+                required:
+                  - book
+                properties:
+                  book:
+                    $ref: "model.openapi.yaml#/components/schemas/Book"
   "/books/{bookId}":
     parameters:
       - name: bookId

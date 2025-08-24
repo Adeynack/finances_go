@@ -1,17 +1,34 @@
 package app
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/adeynack/finances/pkg/api/apimodel"
+	"github.com/adeynack/finances/pkg/api/apiserver"
+	"github.com/adeynack/finances/pkg/repository"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
-func TestHttpServer(t *testing.T) {
-	handler := mustCreateTestHandler()
+func mustCreateTestHandler(t *testing.T) http.Handler {
+	db := repository.NewDB(mustConnectDatabase())
+	db, tx, err := db.BeginTx(t.Context())
+	require.NoError(t, err)
 
+	t.Cleanup(func() {
+		_ = tx.Rollback()
+	})
+
+	return mustCreateHandler(db)
+}
+
+func TestHttpServer(t *testing.T) {
 	t.Run("GET /health", func(t *testing.T) {
+		handler := mustCreateTestHandler(t)
 		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/health", nil)
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
@@ -20,7 +37,43 @@ func TestHttpServer(t *testing.T) {
 		require.JSONEq(t, `{"status": "healthy"}`, response.Body.String())
 	})
 
+	t.Run("POST /books", func(t *testing.T) {
+		handler := mustCreateTestHandler(t)
+		requestBody := strings.NewReader(`{
+			"book": {
+				"name": "My all new shiny book",
+				"owner_id": "569bcfdd-4056-42cd-af9c-285fa5ce92c8",
+				"default_currency_iso_code": "CAD"
+			}
+		}`)
+		request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/books", requestBody)
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+
+		responseBody := response.Body.String()
+		require.Equal(t, http.StatusCreated, response.Code, responseBody)
+
+		var body apiserver.CreateBook201JSONResponse
+		require.NoError(t, json.Unmarshal(response.Body.Bytes(), &body))
+		require.NotEmpty(t, body.Book.Id, responseBody)
+		require.NotEmpty(t, body.Book.CreatedAt, responseBody)
+		require.NotEmpty(t, body.Book.UpdatedAt, responseBody)
+		expectedBody := apiserver.CreateBook201JSONResponse{
+			Book: apimodel.Book{
+				Id:                     body.Book.Id,
+				CreatedAt:              body.Book.CreatedAt,
+				UpdatedAt:              body.Book.UpdatedAt,
+				Name:                   "My all new shiny book",
+				OwnerId:                uuid.MustParse("569bcfdd-4056-42cd-af9c-285fa5ce92c8"),
+				OwnerDisplayName:       "TODO", // todo
+				DefaultCurrencyIsoCode: "CAD",
+			},
+		}
+		require.Equal(t, expectedBody, body, requestBody)
+	})
+
 	t.Run("GET /books", func(t *testing.T) {
+		handler := mustCreateTestHandler(t)
 		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/books", nil)
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
@@ -52,6 +105,7 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("GET /book/:id", func(t *testing.T) {
+		handler := mustCreateTestHandler(t)
 		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/books/8d8666c0-016f-49fb-8f59-4150a822ffb2", nil)
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
@@ -72,6 +126,7 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("GET /exchanges", func(t *testing.T) {
+		handler := mustCreateTestHandler(t)
 		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/exchanges", nil)
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)

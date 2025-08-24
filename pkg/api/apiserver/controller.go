@@ -40,6 +40,15 @@ func (s *Service) GetBook(ctx context.Context, request GetBookRequestObject) (Ge
 	return GetBook200JSONResponse{Book: book}, nil
 }
 
+func (s *Service) CreateBook(ctx context.Context, request CreateBookRequestObject) (CreateBookResponseObject, error) {
+	book, err := s.Repo.CreateBook(ctx, request.Body.Book)
+	if err != nil {
+		return nil, err
+	}
+
+	return CreateBook201JSONResponse{Book: book}, nil
+}
+
 // GetExchanges implements StrictServerInterface.
 func (s *Service) GetExchanges(ctx context.Context, request GetExchangesRequestObject) (GetExchangesResponseObject, error) {
 	exchangesForAPIResponse, err := s.Repo.GetExchangesWithSplits(ctx)

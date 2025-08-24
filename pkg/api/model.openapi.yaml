@@ -25,21 +25,24 @@ components:
       allOf:
         - $ref: "#/components/schemas/ExistingResource"
         - $ref: "#/components/schemas/BookProperties"
+        - type: object
+          required:
+            - owner_display_name
+          properties:
+            owner_display_name:
+              type: string
 
     BookProperties:
       type: object
       required:
         - name
         - owner_id
-        - owner_display_name
         - default_currency_iso_code
       properties:
         name:
           type: string
         owner_id:
           $ref: "#/components/schemas/ID"
-        owner_display_name:
-          type: string
         default_currency_iso_code:
           type: string
 

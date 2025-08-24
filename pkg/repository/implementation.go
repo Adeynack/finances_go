@@ -61,18 +61,18 @@ func (r *implementation) GetBooks(ctx context.Context) ([]apimodel.Book, error) 
 		}
 	})
 
-	// Temporary code to prove the embedded transaction simulation works.
-	InTransaction(ctx, db, func(ctx context.Context, db DB) (bool, error) {
-		const query = `insert into books(created_at, updated_at, default_currency_iso_code, name, owner_id) values ($1, $2, $3, $4, $5)`
-		_, err := db.ExecContext(ctx, query,
-			time.Now(),
-			time.Now(),
-			"CAD",
-			fmt.Sprintf("Foo %s", uuid.NewString()),
-			"569bcfdd-4056-42cd-af9c-285fa5ce92c8",
-		)
-		return true, err
-	})
+	// // Temporary code to prove the embedded transaction simulation works.
+	// InTransaction(ctx, db, func(ctx context.Context, db DB) (bool, error) {
+	// 	const query = `insert into books(created_at, updated_at, default_currency_iso_code, name, owner_id) values ($1, $2, $3, $4, $5)`
+	// 	_, err := db.ExecContext(ctx, query,
+	// 		time.Now(),
+	// 		time.Now(),
+	// 		"CAD",
+	// 		fmt.Sprintf("Foo %s", uuid.NewString()),
+	// 		"569bcfdd-4056-42cd-af9c-285fa5ce92c8",
+	// 	)
+	// 	return true, err
+	// })
 
 	return booksForAPIResponse, nil
 }
@@ -112,6 +112,51 @@ func (r *implementation) GetBookByID(ctx context.Context, bookId uuid.UUID) (*ap
 		OwnerId:                book.OwnerID,
 		UpdatedAt:              book.UpdatedAt,
 	}, nil
+}
+
+func (r *implementation) CreateBook(ctx context.Context, props apimodel.BookProperties) (apimodel.Book, error) {
+	db, err := ctxval.Resolve[DB](ctx)
+	if err != nil {
+		return apimodel.Book{}, err
+	}
+
+	stmt := Books.INSERT(
+		Books.CreatedAt,
+		Books.UpdatedAt,
+		Books.Name,
+		Books.OwnerID,
+		Books.DefaultCurrencyIsoCode,
+	).VALUES(
+		time.Now(),
+		time.Now(),
+		props.Name,
+		props.OwnerId,
+		props.DefaultCurrencyIsoCode,
+	).RETURNING(
+		Books.AllColumns,
+	)
+
+	var insertedBooks []model.Books
+	err = stmt.QueryContext(ctx, db, &insertedBooks)
+	if err != nil {
+		return apimodel.Book{}, fmt.Errorf("inserting a new book: %w", err)
+	}
+	if len(insertedBooks) != 1 {
+		return apimodel.Book{}, fmt.Errorf("expected 1 book to be inserted, got %d", len(insertedBooks))
+	}
+	book := insertedBooks[0]
+
+	result := apimodel.Book{
+		CreatedAt:              book.CreatedAt,
+		DefaultCurrencyIsoCode: book.DefaultCurrencyIsoCode,
+		Id:                     book.ID,
+		Name:                   book.Name,
+		OwnerDisplayName:       "TODO",
+		OwnerId:                book.OwnerID,
+		UpdatedAt:              book.UpdatedAt,
+	}
+
+	return result, nil
 }
 
 func (r *implementation) GetExchangesWithSplits(ctx context.Context) ([]apimodel.ExchangeWithSplits, error) {

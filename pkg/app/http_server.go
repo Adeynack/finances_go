@@ -20,7 +20,8 @@ import (
 type ServerShutdownFunc func() error
 
 func MustStartHttpServer() ServerShutdownFunc {
-	handler := mustCreateHandler(false)
+	db := repository.NewDB(mustConnectDatabase())
+	handler := mustCreateHandler(db)
 
 	address := fmt.Sprintf("localhost:%s", os.Getenv("PORT"))
 	server := &http.Server{Handler: handler, Addr: address}
@@ -43,13 +44,7 @@ func MustStartHttpServer() ServerShutdownFunc {
 	return shutdown
 }
 
-func mustCreateTestHandler() http.Handler {
-	return mustCreateHandler(true)
-}
-
-func mustCreateHandler(testing bool) http.Handler {
-	db := repository.NewDB(mustConnectDatabase())
-
+func mustCreateHandler(db repository.DB) http.Handler {
 	repo, err := repository.New()
 	if err != nil {
 		panic(err)
@@ -63,7 +58,7 @@ func mustCreateHandler(testing bool) http.Handler {
 		requestIDStructuredLog,
 		middleware.Logger,
 		middleware.Timeout(30*time.Second),
-		injectDBConnection(db, testing),
+		injectDBConnection(db),
 	)
 	strictHandler := apiserver.NewStrictHandler(apiImpl, middlewares)
 	return apiserver.HandlerFromMux(strictHandler, router)
@@ -81,23 +76,7 @@ func requestIDStructuredLog(next http.Handler) http.Handler {
 	})
 }
 
-func injectDBConnection(db repository.DB, testing bool) func(next http.Handler) http.Handler {
-	if testing {
-		return func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				ctx := r.Context()
-				db, tx, err := db.BeginTx(ctx)
-				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-
-				defer tx.Rollback()
-				next.ServeHTTP(w, r.WithContext(ctxval.Register(ctx, db)))
-			})
-		}
-	}
-
+func injectDBConnection(db repository.DB) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			next.ServeHTTP(w, r.WithContext(ctxval.Register(r.Context(), db)))

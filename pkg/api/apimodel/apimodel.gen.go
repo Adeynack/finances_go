@@ -37,7 +37,6 @@ type Book struct {
 type BookProperties struct {
 	DefaultCurrencyIsoCode string `json:"default_currency_iso_code"`
 	Name                   string `json:"name"`
-	OwnerDisplayName       string `json:"owner_display_name"`
 	OwnerId                ID     `json:"owner_id"`
 }
 

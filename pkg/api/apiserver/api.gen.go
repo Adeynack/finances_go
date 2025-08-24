@@ -20,11 +20,22 @@ type GetBooksParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// CreateBookJSONBody defines parameters for CreateBook.
+type CreateBookJSONBody struct {
+	Book externalRef0.BookProperties `json:"book"`
+}
+
+// CreateBookJSONRequestBody defines body for CreateBook for application/json ContentType.
+type CreateBookJSONRequestBody CreateBookJSONBody
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
 	// (GET /books)
 	GetBooks(w http.ResponseWriter, r *http.Request, params GetBooksParams)
+
+	// (POST /books)
+	CreateBook(w http.ResponseWriter, r *http.Request)
 
 	// (GET /books/{bookId})
 	GetBook(w http.ResponseWriter, r *http.Request, bookId string)
@@ -42,6 +53,11 @@ type Unimplemented struct{}
 
 // (GET /books)
 func (_ Unimplemented) GetBooks(w http.ResponseWriter, r *http.Request, params GetBooksParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /books)
+func (_ Unimplemented) CreateBook(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -87,6 +103,20 @@ func (siw *ServerInterfaceWrapper) GetBooks(w http.ResponseWriter, r *http.Reque
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetBooks(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateBook operation middleware
+func (siw *ServerInterfaceWrapper) CreateBook(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateBook(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -266,6 +296,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/books", wrapper.GetBooks)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/books", wrapper.CreateBook)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/books/{bookId}", wrapper.GetBook)
 	})
 	r.Group(func(r chi.Router) {
@@ -293,6 +326,25 @@ type GetBooks200JSONResponse struct {
 func (response GetBooks200JSONResponse) VisitGetBooksResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateBookRequestObject struct {
+	Body *CreateBookJSONRequestBody
+}
+
+type CreateBookResponseObject interface {
+	VisitCreateBookResponse(w http.ResponseWriter) error
+}
+
+type CreateBook201JSONResponse struct {
+	Book externalRef0.Book `json:"book"`
+}
+
+func (response CreateBook201JSONResponse) VisitCreateBookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -367,6 +419,9 @@ type StrictServerInterface interface {
 	// (GET /books)
 	GetBooks(ctx context.Context, request GetBooksRequestObject) (GetBooksResponseObject, error)
 
+	// (POST /books)
+	CreateBook(ctx context.Context, request CreateBookRequestObject) (CreateBookResponseObject, error)
+
 	// (GET /books/{bookId})
 	GetBook(ctx context.Context, request GetBookRequestObject) (GetBookResponseObject, error)
 
@@ -425,6 +480,37 @@ func (sh *strictHandler) GetBooks(w http.ResponseWriter, r *http.Request, params
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetBooksResponseObject); ok {
 		if err := validResponse.VisitGetBooksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateBook operation middleware
+func (sh *strictHandler) CreateBook(w http.ResponseWriter, r *http.Request) {
+	var request CreateBookRequestObject
+
+	var body CreateBookJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateBook(ctx, request.(CreateBookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateBook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateBookResponseObject); ok {
+		if err := validResponse.VisitCreateBookResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
