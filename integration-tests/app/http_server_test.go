@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,64 +13,77 @@ import (
 	"github.com/adeynack/finances/pkg/api/apiserver"
 	"github.com/adeynack/finances/tests"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
+type HttpServerTestSuite struct {
+	suite.Suite
+	handler http.Handler
+}
+
 func TestHttpServer(t *testing.T) {
-	t.Run("GET /health", func(t *testing.T) {
-		handler := tests.CreateTestAPIHandler(t)
-		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/health", nil)
-		response := httptest.NewRecorder()
-		handler.ServeHTTP(response, request)
+	suite.Run(t, new(HttpServerTestSuite))
+}
 
-		require.Equal(t, http.StatusOK, response.Code)
-		require.JSONEq(t, `{"status": "healthy"}`, response.Body.String())
-	})
+func (s *HttpServerTestSuite) SetupTest() {
+	s.T().Log("SetupTest called")
+	s.handler = tests.CreateTestAPIHandler(s.T())
+}
 
-	t.Run("POST /books", func(t *testing.T) {
-		startTime := time.Now()
-		handler := tests.CreateTestAPIHandler(t)
-		requestBody := strings.NewReader(`{
+func (s *HttpServerTestSuite) PerformRequest(
+	method string, // eg: http.MethodGet
+	target string, // eg: /health
+	body io.Reader, // eg: strings.NewReader(`{"foo": "bar"}`) or nil if no request body
+) *httptest.ResponseRecorder {
+	request := httptest.NewRequestWithContext(s.T().Context(), method, target, body)
+	response := httptest.NewRecorder()
+	s.handler.ServeHTTP(response, request)
+
+	return response
+}
+
+func (s *HttpServerTestSuite) Test_GET_health() {
+	response := s.PerformRequest(http.MethodGet, "/health", nil)
+	s.Require().Equal(http.StatusOK, response.Code)
+	s.Require().JSONEq(`{"status": "healthy"}`, response.Body.String())
+}
+
+func (s *HttpServerTestSuite) Test_POST_books() {
+	startTime := time.Now()
+	requestBody := strings.NewReader(`{
 			"book": {
 				"name": "My all new shiny book",
 				"owner_id": "569bcfdd-4056-42cd-af9c-285fa5ce92c8",
 				"default_currency_iso_code": "CAD"
 			}
 		}`)
-		request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/books", requestBody)
-		response := httptest.NewRecorder()
-		handler.ServeHTTP(response, request)
+	response := s.PerformRequest(http.MethodPost, "/books", requestBody)
 
-		responseBody := response.Body.String()
-		require.Equal(t, http.StatusCreated, response.Code, responseBody)
+	s.Require().Equal(http.StatusCreated, response.Code, response.Body)
 
-		var body apiserver.CreateBook201JSONResponse
-		require.NoError(t, json.Unmarshal(response.Body.Bytes(), &body), responseBody)
-		require.NotZero(t, body.Book.Id, "expecting an ID to be set")
-		require.GreaterOrEqual(t, body.Book.CreatedAt, startTime, "expecting CreatedAt to be set to book creation time")
-		require.GreaterOrEqual(t, body.Book.UpdatedAt, startTime, "expecting CreatedAt to be set to book creation time")
-		expectedBody := apiserver.CreateBook201JSONResponse{
-			Book: apimodel.Book{
-				Id:                     body.Book.Id,
-				CreatedAt:              body.Book.CreatedAt,
-				UpdatedAt:              body.Book.UpdatedAt,
-				Name:                   "My all new shiny book",
-				OwnerId:                uuid.MustParse("569bcfdd-4056-42cd-af9c-285fa5ce92c8"),
-				OwnerDisplayName:       "TODO", // todo
-				DefaultCurrencyIsoCode: "CAD",
-			},
-		}
-		require.Equal(t, expectedBody, body, requestBody)
-	})
+	var body apiserver.CreateBook201JSONResponse
+	s.Require().NoError(json.Unmarshal(response.Body.Bytes(), &body), response.Body)
+	s.Require().NotZero(body.Book.Id, "expecting an ID to be set")
+	s.Require().GreaterOrEqual(body.Book.CreatedAt, startTime, "expecting CreatedAt to be set to book creation time")
+	s.Require().GreaterOrEqual(body.Book.UpdatedAt, startTime, "expecting CreatedAt to be set to book creation time")
+	expectedBody := apiserver.CreateBook201JSONResponse{
+		Book: apimodel.Book{
+			Id:                     body.Book.Id,
+			CreatedAt:              body.Book.CreatedAt,
+			UpdatedAt:              body.Book.UpdatedAt,
+			Name:                   "My all new shiny book",
+			OwnerId:                uuid.MustParse("569bcfdd-4056-42cd-af9c-285fa5ce92c8"),
+			OwnerDisplayName:       "TODO", // todo
+			DefaultCurrencyIsoCode: "CAD",
+		},
+	}
+	s.Require().Equal(expectedBody, body, requestBody)
+}
 
-	t.Run("GET /books", func(t *testing.T) {
-		handler := tests.CreateTestAPIHandler(t)
-		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/books", nil)
-		response := httptest.NewRecorder()
-		handler.ServeHTTP(response, request)
-
-		require.Equal(t, http.StatusOK, response.Code, response.Body.String())
-		const expectedBody = `{
+func (s *HttpServerTestSuite) Test_GET_books() {
+	response := s.PerformRequest(http.MethodGet, "/books", nil)
+	s.Require().Equal(http.StatusOK, response.Code, response.Body)
+	const expectedBody = `{
 			"books": [
 				{
 					"created_at": "2025-08-24T00:20:00Z",
@@ -91,17 +105,13 @@ func TestHttpServer(t *testing.T) {
 				}
 			]
 		}`
-		require.JSONEq(t, expectedBody, response.Body.String(), response.Body.String())
-	})
+	s.Require().JSONEq(expectedBody, response.Body.String(), response.Body)
+}
 
-	t.Run("GET /book/:id", func(t *testing.T) {
-		handler := tests.CreateTestAPIHandler(t)
-		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/books/8d8666c0-016f-49fb-8f59-4150a822ffb2", nil)
-		response := httptest.NewRecorder()
-		handler.ServeHTTP(response, request)
-
-		require.Equal(t, http.StatusOK, response.Code, response.Body.String())
-		const expectedBody = `{
+func (s *HttpServerTestSuite) Test_GET_book_id() {
+	response := s.PerformRequest(http.MethodGet, "/books/8d8666c0-016f-49fb-8f59-4150a822ffb2", nil)
+	s.Require().Equal(http.StatusOK, response.Code, response.Body)
+	const expectedBody = `{
 			"book": {
 				"created_at": "2025-08-14T21:47:58.211393Z",
 				"default_currency_iso_code": "EUR",
@@ -112,17 +122,13 @@ func TestHttpServer(t *testing.T) {
 				"updated_at": "2025-08-14T21:47:58.211393Z"
 			}
 		}`
-		require.JSONEq(t, expectedBody, response.Body.String(), response.Body.String())
-	})
+	s.Require().JSONEq(expectedBody, response.Body.String(), response.Body)
+}
 
-	t.Run("GET /exchanges", func(t *testing.T) {
-		handler := tests.CreateTestAPIHandler(t)
-		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/exchanges", nil)
-		response := httptest.NewRecorder()
-		handler.ServeHTTP(response, request)
-
-		require.Equal(t, http.StatusOK, response.Code, response.Body.String())
-		const expectedBody = `{
+func (s *HttpServerTestSuite) Test_GET_exchanges() {
+	response := s.PerformRequest(http.MethodGet, "/exchanges", nil)
+	s.Require().Equal(http.StatusOK, response.Code, response.Body)
+	const expectedBody = `{
 			"exchanges": [
 				{
 					"created_at": "2025-08-14T21:53:51.988009Z",
@@ -229,6 +235,5 @@ func TestHttpServer(t *testing.T) {
 				}
 			]
 		}`
-		require.JSONEq(t, expectedBody, response.Body.String(), response.Body.String())
-	})
+	s.Require().JSONEq(expectedBody, response.Body.String(), response.Body)
 }
