@@ -45,7 +45,7 @@ test-unit:
 
 .PHONY: test-integration
 test-integration:
-	go tool godotenv -f .env.test go test ./tests/... -v -count=1 -json | go tool gotestfmt
+	go tool godotenv -f .env.test go test ./tests/... -v -count=1
 
 .PHONY: ct
 ct: clean test-unit test-integration

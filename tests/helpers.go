@@ -16,7 +16,7 @@ var internalTestDbConnection = sync.OnceValue(func() repository.DB {
 
 // GetTestDB starts a transaction on the internal test dabase connection
 // that will automatically be rollbacked after the test is performed.
-func GetTestDB(t *testing.T) repository.DB {
+func GetTestDB(t testing.TB) repository.DB {
 	db, txc, err := internalTestDbConnection().BeginTx(t.Context())
 	require.NoError(t, err)
 
@@ -27,6 +27,6 @@ func GetTestDB(t *testing.T) repository.DB {
 	return db
 }
 
-func CreateTestAPIHandler(t *testing.T) http.Handler {
+func CreateTestAPIHandler(t testing.TB) http.Handler {
 	return app.MustCreateHandler(GetTestDB(t))
 }
