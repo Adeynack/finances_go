@@ -25,10 +25,8 @@ func TestHttpServer(t *testing.T) {
 		return tests.CreateTestAPIHandler(t.TB)
 	})
 
-	method := testcase.Let[string](s, nil)
-
-	path := testcase.Let[string](s, nil)
-
+	method := testcase.Var[string]{ID: "method"}
+	path := testcase.Var[string]{ID: "path"}
 	requestBody := testcase.LetValue[io.Reader](s, nil)
 
 	response := testcase.Let(s, func(t *testcase.T) httptest.ResponseRecorder {
