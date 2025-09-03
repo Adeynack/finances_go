@@ -2,6 +2,7 @@ package apiserver
 
 import (
 	"context"
+	"errors"
 
 	"github.com/adeynack/finances/pkg/api/apimodel"
 	"github.com/adeynack/finances/pkg/repository"
@@ -43,6 +44,9 @@ func (s *Service) GetBook(ctx context.Context, request GetBookRequestObject) (Ge
 func (s *Service) CreateBook(ctx context.Context, request CreateBookRequestObject) (CreateBookResponseObject, error) {
 	book, err := s.Repo.CreateBook(ctx, request.Body.Book)
 	if err != nil {
+		if errors.Is(err, repository.ErrValidation) {
+			return CreateBook422JSONResponse{Status: 422, Title: err.Error()}, nil
+		}
 		return nil, err
 	}
 

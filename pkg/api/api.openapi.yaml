@@ -53,6 +53,12 @@ paths:
                 properties:
                   book:
                     $ref: "model.openapi.yaml#/components/schemas/Book"
+        "422":
+          description: Unprocessable Entity
+          content:
+            "application/json":
+              schema:
+                $ref: "model.openapi.yaml#/components/schemas/Error"
   "/books/{bookId}":
     parameters:
       - name: bookId

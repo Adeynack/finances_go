@@ -2,7 +2,10 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/adeynack/finances/pkg/api/apimodel"
@@ -21,6 +24,11 @@ func New() (R, error) {
 }
 
 type implementation struct{}
+
+func (r *implementation) errorIsEmptyResultSet(err error) bool {
+	return errors.Is(err, sql.ErrNoRows) ||
+		strings.Contains(err.Error(), "qrm: no rows in result set")
+}
 
 func (r *implementation) GetBooks(ctx context.Context) ([]apimodel.Book, error) {
 	db, err := ctxval.Resolve[DB](ctx)
@@ -120,6 +128,17 @@ func (r *implementation) CreateBook(ctx context.Context, props apimodel.BookProp
 		return apimodel.Book{}, err
 	}
 
+	// Validate if the user exists
+	_, err = r.GetUserByID(ctx, props.OwnerId)
+	if err != nil {
+		if r.errorIsEmptyResultSet(err) {
+			return apimodel.Book{}, fmt.Errorf("%w: owner does not exist", ErrValidation)
+		}
+
+		return apimodel.Book{}, fmt.Errorf("checking existence of book owner: %w", err)
+	}
+
+	// Create new book
 	stmt := Books.INSERT(
 		Books.CreatedAt,
 		Books.UpdatedAt,
@@ -212,4 +231,32 @@ func (r *implementation) GetExchangesWithSplits(ctx context.Context) ([]apimodel
 	})
 
 	return exchangesForAPIResponse, nil
+}
+
+func (r *implementation) GetUserByID(ctx context.Context, userID uuid.UUID) (apimodel.User, error) {
+	db, err := ctxval.Resolve[DB](ctx)
+	if err != nil {
+		return apimodel.User{}, err
+	}
+
+	stmt := SELECT(
+		Users.AllColumns,
+	).FROM(
+		Users,
+	).WHERE(
+		Users.ID.EQ(UUID(userID)),
+	).LIMIT(1)
+
+	var user apimodel.User
+	err = stmt.QueryContext(ctx, db, &user)
+	if err != nil {
+		return apimodel.User{}, fmt.Errorf("fetching the user by its ID: %w", err)
+	}
+
+	return apimodel.User{
+		CreatedAt:   user.CreatedAt,
+		DisplayName: user.DisplayName,
+		Id:          user.Id,
+		UpdatedAt:   user.UpdatedAt,
+	}, nil
 }

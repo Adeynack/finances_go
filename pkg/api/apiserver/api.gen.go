@@ -349,6 +349,15 @@ func (response CreateBook201JSONResponse) VisitCreateBookResponse(w http.Respons
 	return json.NewEncoder(w).Encode(response)
 }
 
+type CreateBook422JSONResponse externalRef0.Error
+
+func (response CreateBook422JSONResponse) VisitCreateBookResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetBookRequestObject struct {
 	BookId string `json:"bookId,omitempty"`
 }

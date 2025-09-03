@@ -57,6 +57,27 @@ func TestHttpServer(t *testing.T) {
 		s.When("POST", func(s *testcase.Spec) {
 			method.LetValue(s, http.MethodPost)
 
+			s.When("the owner ID does not exist", func(s *testcase.Spec) {
+				requestBody.Let(s, func(t *testcase.T) io.Reader {
+					return strings.NewReader(`{
+							"book": {
+								"name": "My all new shiny book",
+								"owner_id": "095005a0-aa18-43f6-b578-66800aa6aae8",
+								"default_currency_iso_code": "CAD"
+							}
+						}
+					`)
+				})
+
+				s.Then("it fails with a 422 Unprocessable Entity", func(t *testcase.T) {
+					r := response.Get(t)
+					require.Equal(t, http.StatusUnprocessableEntity, r.Code)
+					var jsonError apimodel.Error
+					require.NoError(t, json.Unmarshal(r.Body.Bytes(), &jsonError))
+					require.Equal(t, "validation error: owner does not exist", jsonError.Title)
+				})
+			})
+
 			s.When("the request contains a valid book to create", func(s *testcase.Spec) {
 				requestBody.Let(s, func(t *testcase.T) io.Reader {
 					return strings.NewReader(`{

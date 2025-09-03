@@ -12,4 +12,5 @@ type R interface {
 	GetBookByID(ctx context.Context, bookId uuid.UUID) (*apimodel.Book, error)
 	CreateBook(ctx context.Context, body apimodel.BookProperties) (apimodel.Book, error)
 	GetExchangesWithSplits(ctx context.Context) ([]apimodel.ExchangeWithSplits, error)
+	GetUserByID(ctx context.Context, userID uuid.UUID) (apimodel.User, error)
 }
