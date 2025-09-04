@@ -124,12 +124,12 @@ type SplitProperties struct {
 // User defines model for User.
 type User struct {
 	CreatedAt   time.Time `json:"created_at"`
-	DisplayName *string   `json:"display_name,omitempty"`
+	DisplayName string    `json:"display_name"`
 	Id          ID        `json:"id"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // UserProperties defines model for UserProperties.
 type UserProperties struct {
-	DisplayName *string `json:"display_name,omitempty"`
+	DisplayName string `json:"display_name"`
 }

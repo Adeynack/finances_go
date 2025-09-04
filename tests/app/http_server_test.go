@@ -107,7 +107,7 @@ func TestHttpServer(t *testing.T) {
 							UpdatedAt:              body.Book.UpdatedAt,
 							Name:                   "My all new shiny book",
 							OwnerId:                uuid.MustParse("569bcfdd-4056-42cd-af9c-285fa5ce92c8"),
-							OwnerDisplayName:       "TODO", // todo
+							OwnerDisplayName:       "Joe",
 							DefaultCurrencyIsoCode: "CAD",
 						},
 					}

@@ -129,7 +129,7 @@ func (r *implementation) CreateBook(ctx context.Context, props apimodel.BookProp
 	}
 
 	// Validate if the user exists
-	_, err = r.GetUserByID(ctx, props.OwnerId)
+	owner, err := r.GetUserByID(ctx, props.OwnerId)
 	if err != nil {
 		if r.errorIsEmptyResultSet(err) {
 			return apimodel.Book{}, fmt.Errorf("%w: owner does not exist", ErrValidation)
@@ -170,7 +170,7 @@ func (r *implementation) CreateBook(ctx context.Context, props apimodel.BookProp
 		DefaultCurrencyIsoCode: book.DefaultCurrencyIsoCode,
 		Id:                     book.ID,
 		Name:                   book.Name,
-		OwnerDisplayName:       "TODO",
+		OwnerDisplayName:       owner.DisplayName,
 		OwnerId:                book.OwnerID,
 		UpdatedAt:              book.UpdatedAt,
 	}
@@ -247,7 +247,7 @@ func (r *implementation) GetUserByID(ctx context.Context, userID uuid.UUID) (api
 		Users.ID.EQ(UUID(userID)),
 	).LIMIT(1)
 
-	var user apimodel.User
+	var user model.Users
 	err = stmt.QueryContext(ctx, db, &user)
 	if err != nil {
 		return apimodel.User{}, fmt.Errorf("fetching the user by its ID: %w", err)
@@ -256,7 +256,7 @@ func (r *implementation) GetUserByID(ctx context.Context, userID uuid.UUID) (api
 	return apimodel.User{
 		CreatedAt:   user.CreatedAt,
 		DisplayName: user.DisplayName,
-		Id:          user.Id,
+		Id:          user.ID,
 		UpdatedAt:   user.UpdatedAt,
 	}, nil
 }
