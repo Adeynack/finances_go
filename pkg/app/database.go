@@ -17,6 +17,7 @@ func MustConnectDatabase() *bun.DB {
 	}
 
 	db := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
+	bunDB := bun.NewDB(db, pgdialect.New())
 
-	return bun.NewDB(db, pgdialect.New())
+	return bunDB
 }

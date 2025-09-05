@@ -30,6 +30,7 @@ type DB interface {
 	NewTruncateTable() *bun.TruncateTableQuery
 	NewAddColumn() *bun.AddColumnQuery
 	NewDropColumn() *bun.DropColumnQuery
+	RunInTx(ctx context.Context, opts *sql.TxOptions, fn func(ctx context.Context, tx bun.Tx) error) error
 }
 
 // type TransactionCloser interface {
