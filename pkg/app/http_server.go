@@ -20,7 +20,7 @@ import (
 type ServerShutdownFunc func() error
 
 func MustStartHttpServer() ServerShutdownFunc {
-	db := repository.NewDB(MustConnectDatabase())
+	db := MustConnectDatabase()
 	handler := MustCreateHandler(db)
 
 	address := fmt.Sprintf("localhost:%s", os.Getenv("PORT"))
