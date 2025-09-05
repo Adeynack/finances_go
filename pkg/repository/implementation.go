@@ -10,8 +10,9 @@ import (
 
 	"github.com/adeynack/finances/pkg/api/apimodel"
 	"github.com/adeynack/finances/pkg/platform/ctxval"
+	"github.com/adeynack/finances/pkg/repository/sqlcdb"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
+	"github.com/oapi-codegen/runtime/types"
 	"github.com/samber/lo"
 )
 
@@ -26,98 +27,67 @@ func (r *implementation) errorIsEmptyResultSet(err error) bool {
 		strings.Contains(err.Error(), "qrm: no rows in result set")
 }
 
-func (r *implementation) GetBooks(ctx context.Context) ([]apimodel.Book, error) {
+func (r *implementation) resolveSqlcDb(ctx context.Context) (*sqlcdb.Queries, error) {
 	db, err := ctxval.Resolve[DB](ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	const query = `-- GetBooks
-		select
-			books.created_at,
-			books.default_currency_iso_code,
-			books.id,
-			books.name,
-			books.owner_id,
-			users.display_name,
-			books.updated_at
-		from books
-		inner join users on users.id = books.owner_id
-		order by books.name, books.id
-	`
+	return sqlcdb.New(db), nil
+}
 
-	booksForAPIResponse := make([]apimodel.Book, 0)
-	rows, err := db.QueryContext(ctx, query)
+func (r *implementation) GetBooks(ctx context.Context) ([]apimodel.Book, error) {
+	db, err := r.resolveSqlcDb(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("querying GetBooks: %w", err)
+		return nil, err
 	}
 
-	for rows.Next() {
-		var b apimodel.Book
-		err = rows.Scan(
-			&b.CreatedAt,
-			&b.DefaultCurrencyIsoCode,
-			&b.Id,
-			&b.Name,
-			&b.OwnerId,
-			&b.OwnerDisplayName,
-			&b.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("scanning GetBooks: %w", err)
+	books, err := db.GetBooks(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("quering for books: %w", err)
+	}
+
+	booksForAPIResponse := lo.Map(books, func(b sqlcdb.GetBooksRow, _ int) apimodel.Book {
+		return apimodel.Book{
+			CreatedAt:              b.CreatedAt,
+			DefaultCurrencyIsoCode: b.DefaultCurrencyIsoCode,
+			Id:                     b.ID,
+			Name:                   b.Name,
+			OwnerDisplayName:       b.OwnerDisplayName,
+			OwnerId:                b.OwnerID,
+			UpdatedAt:              b.UpdatedAt,
 		}
-
-		booksForAPIResponse = append(booksForAPIResponse, b)
-	}
+	})
 
 	return booksForAPIResponse, nil
 }
 
 func (r *implementation) GetBookByID(ctx context.Context, bookId uuid.UUID) (*apimodel.Book, error) {
-	db, err := ctxval.Resolve[DB](ctx)
+	db, err := r.resolveSqlcDb(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	const query = `-- GetBookByID
-		select
-			books.created_at,
-			books.default_currency_iso_code,
-			books.id,
-			books.name,
-			books.owner_id,
-			users.display_name,
-			books.updated_at
-		from books
-		inner join users on users.id = books.owner_id
-		where books.id = $1
-		limit 1
-	`
-
-	row := db.QueryRowContext(ctx, query, bookId)
-	if row.Err() != nil {
-		return nil, fmt.Errorf("querying GetBookByID: %w", row.Err())
+	book, err := db.GetBookByID(ctx, bookId)
+	if err != nil {
+		return nil, fmt.Errorf("querying BookByID: %w", err)
 	}
 
-	var b apimodel.Book
-	err = row.Scan(
-		&b.CreatedAt,
-		&b.DefaultCurrencyIsoCode,
-		&b.Id,
-		&b.Name,
-		&b.OwnerId,
-		&b.OwnerDisplayName,
-		&b.UpdatedAt,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("scanning GetBookByID: %w", err)
+	b := apimodel.Book{
+		CreatedAt:              book.CreatedAt,
+		DefaultCurrencyIsoCode: book.DefaultCurrencyIsoCode,
+		Id:                     book.ID,
+		Name:                   book.Name,
+		OwnerDisplayName:       book.OwnerDisplayName,
+		OwnerId:                book.OwnerID,
+		UpdatedAt:              book.UpdatedAt,
 	}
 
 	return &b, nil
 }
 
 func (r *implementation) CreateBook(ctx context.Context, props apimodel.BookProperties) (apimodel.Book, error) {
-	db, err := ctxval.Resolve[DB](ctx)
+	db, err := r.resolveSqlcDb(ctx)
 	if err != nil {
 		return apimodel.Book{}, err
 	}
@@ -132,201 +102,74 @@ func (r *implementation) CreateBook(ctx context.Context, props apimodel.BookProp
 		return apimodel.Book{}, fmt.Errorf("checking existence of book owner: %w", err)
 	}
 
-	const query = `-- CreateBook
-		insert into books(
-			created_at,
-			updated_at,
-			name,
-			owner_id,
-			default_currency_iso_code
-		) values (
-			$1, -- created_at,
-			$2, -- updated_at,
-			$3, -- name,
-			$4, -- owner_id,
-			$5  -- default_currency_iso_code
-		)
-		returning
-			id,
-			created_at,
-			updated_at,
-			name,
-			owner_id,
-			default_currency_iso_code
-	`
-
-	row := db.QueryRowContext(ctx, query,
-		time.Now(),
-		time.Now(),
-		props.Name,
-		props.OwnerId,
-		props.DefaultCurrencyIsoCode,
-	)
-	if row.Err() != nil {
-		return apimodel.Book{}, fmt.Errorf("querying CreateBook: %w", row.Err())
+	book, err := db.CreateBook(ctx, sqlcdb.CreateBookParams{
+		CreatedAt:              time.Now(),
+		UpdatedAt:              time.Now(),
+		Name:                   props.Name,
+		OwnerID:                props.OwnerId,
+		DefaultCurrencyIsoCode: props.DefaultCurrencyIsoCode,
+	})
+	if err != nil {
+		return apimodel.Book{}, fmt.Errorf("querying CreateBook: %w", err)
 	}
 
 	result := apimodel.Book{
-		OwnerDisplayName: owner.DisplayName,
-	}
-	err = row.Scan(
-		&result.Id,
-		&result.CreatedAt,
-		&result.UpdatedAt,
-		&result.Name,
-		&result.OwnerId,
-		&result.DefaultCurrencyIsoCode,
-	)
-	if err != nil {
-		return apimodel.Book{}, fmt.Errorf("scanning CreateBook: %w", err)
-	}
-
-	return result, nil
-}
-
-func (r *implementation) GetExchanges(ctx context.Context) ([]apimodel.Exchange, error) {
-	db, err := ctxval.Resolve[DB](ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	const query = `-- GetExchanges
-		select
-			exchanges.cheque,
-			exchanges.created_at,
-			exchanges.date,
-			exchanges.description,
-			exchanges.id,
-			exchanges.memo,
-			exchanges.register_id,
-			exchanges.status,
-			exchanges.updated_at
-		from
-			exchanges
-		order by
-			exchanges.date,
-			exchanges.created_at,
-			exchanges.id
-	`
-
-	rows, err := db.QueryContext(ctx, query)
-	if err != nil {
-		return nil, fmt.Errorf("querying GetExchanges: %w", err)
-	}
-
-	result := make([]apimodel.Exchange, 0)
-	var exchange apimodel.Exchange
-
-	for rows.Next() {
-		err = rows.Scan(
-			&exchange.Cheque,
-			&exchange.CreatedAt,
-			&exchange.Date.Time,
-			&exchange.Description,
-			&exchange.Id,
-			&exchange.Memo,
-			&exchange.RegisterId,
-			&exchange.Status,
-			&exchange.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("scanning GetExchanges: %w", err)
-		}
-
-		result = append(result, exchange)
-	}
-	if rows.Err() != nil {
-		return nil, fmt.Errorf("getting next row for GetExchangesWithSplits: %w", err)
-	}
-
-	return result, nil
-}
-
-func (r *implementation) GetSplitsForExchangeIds(ctx context.Context, exchangeIds []uuid.UUID) ([]apimodel.Split, error) {
-	db, err := ctxval.Resolve[DB](ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	const query = `-- GetSplitsForExchangeIds
-		select
-			splits.amount,
-			splits.counterpart_amount,
-			splits.created_at,
-			splits.destination_register_id,
-			splits.exchange_id,
-			splits.id,
-			splits.memo,
-			splits.status,
-			splits.updated_at
-		from
-			splits
-		where
-			splits.exchange_id = ANY($1)
-		order by
-			splits.created_at,
-			splits.id
-	`
-	rows, err := db.QueryContext(ctx, query, pq.Array(exchangeIds))
-	if err != nil {
-		return nil, fmt.Errorf("querying GetSplitsForExchangeIds: %w", err)
-	}
-
-	result := make([]apimodel.Split, 0)
-	var split apimodel.Split
-
-	for rows.Next() {
-		err = rows.Scan(
-			&split.Amount,
-			&split.CounterpartAmount,
-			&split.CreatedAt,
-			&split.DestinationRegisterId,
-			&split.ExchangeId,
-			&split.Id,
-			&split.Memo,
-			&split.Status,
-			&split.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("scanning GetSplitsForExchangeIds: %w", err)
-		}
-
-		result = append(result, split)
-	}
-	if rows.Err() != nil {
-		return nil, fmt.Errorf("getting next row for GetSplitsForExchangeIds: %w", err)
+		CreatedAt:              book.CreatedAt,
+		DefaultCurrencyIsoCode: book.DefaultCurrencyIsoCode,
+		Id:                     book.ID,
+		Name:                   book.Name,
+		OwnerDisplayName:       owner.DisplayName,
+		OwnerId:                book.OwnerID,
+		UpdatedAt:              book.UpdatedAt,
 	}
 
 	return result, nil
 }
 
 func (r *implementation) GetExchangesWithSplits(ctx context.Context) ([]apimodel.ExchangeWithSplits, error) {
-	exchanges, err := r.GetExchanges(ctx)
+	db, err := r.resolveSqlcDb(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	exchangeIds := lo.Map(exchanges, func(e apimodel.Exchange, _ int) uuid.UUID { return e.Id })
-	splits, err := r.GetSplitsForExchangeIds(ctx, exchangeIds)
+	exchanges, err := db.GetExchanges(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("querying GetExchanges: %w", err)
 	}
 
-	splitsByExchangeId := lo.GroupBy(splits, func(s apimodel.Split) uuid.UUID { return s.ExchangeId })
+	exchangeIds := lo.Map(exchanges, func(e sqlcdb.Exchange, _ int) uuid.UUID { return e.ID })
+	splits, err := db.GetSplitsForExchangeIds(ctx, exchangeIds)
+	if err != nil {
+		return nil, fmt.Errorf("querying GetSplitsForExchangeIds: %w", err)
+	}
 
-	result := lo.Map(exchanges, func(e apimodel.Exchange, _ int) apimodel.ExchangeWithSplits {
-		splitsForExchange := splitsByExchangeId[e.Id]
+	splitsByExchangeId := lo.GroupByMap(splits, func(s sqlcdb.GetSplitsForExchangeIdsRow) (uuid.UUID, apimodel.Split) {
+		return s.ExchangeID, apimodel.Split{
+			Amount:                s.Amount,
+			CounterpartAmount:     int64Ptr(s.CounterpartAmount),
+			CreatedAt:             s.CreatedAt,
+			DestinationRegisterId: s.DestinationRegisterID,
+			ExchangeId:            s.ExchangeID,
+			Id:                    s.ID,
+			Memo:                  strPtr(s.Memo),
+			Status:                apimodel.ExchangeStatus(s.Status),
+			UpdatedAt:             s.UpdatedAt,
+		}
+	})
+
+	result := lo.Map(exchanges, func(e sqlcdb.Exchange, _ int) apimodel.ExchangeWithSplits {
+		splitsForExchange := splitsByExchangeId[e.ID]
 
 		return apimodel.ExchangeWithSplits{
-			Cheque:      e.Cheque,
+			Cheque:      strPtr(e.Cheque),
 			CreatedAt:   e.CreatedAt,
-			Date:        e.Date,
+			Date:        types.Date{Time: e.Date},
 			Description: e.Description,
-			Id:          e.Id,
-			Memo:        e.Memo,
-			RegisterId:  e.RegisterId,
+			Id:          e.ID,
+			Memo:        strPtr(e.Memo),
+			RegisterId:  e.RegisterID,
 			Splits:      splitsForExchange,
-			Status:      e.Status,
+			Status:      apimodel.ExchangeStatus(e.Status),
 			UpdatedAt:   e.UpdatedAt,
 		}
 	})
@@ -335,39 +178,22 @@ func (r *implementation) GetExchangesWithSplits(ctx context.Context) ([]apimodel
 }
 
 func (r *implementation) GetUserByID(ctx context.Context, userID uuid.UUID) (apimodel.User, error) {
-	db, err := ctxval.Resolve[DB](ctx)
+	db, err := r.resolveSqlcDb(ctx)
 	if err != nil {
 		return apimodel.User{}, err
 	}
 
-	const query = `-- GetUserByID
-		select
-			users.created_at,
-			users.display_name,
-			users.id,
-			users.updated_at
-		from
-			users
-		where
-			users.id = $1
-		limit 1
-	`
-
-	row := db.QueryRowContext(ctx, query, userID)
-	if row.Err() != nil {
-		return apimodel.User{}, fmt.Errorf("querying GetUserByID: %w", row.Err())
-	}
-
-	var user apimodel.User
-	err = row.Scan(
-		&user.CreatedAt,
-		&user.DisplayName,
-		&user.Id,
-		&user.UpdatedAt,
-	)
+	user, err := db.GetUserByID(ctx, userID)
 	if err != nil {
-		return apimodel.User{}, fmt.Errorf("scanning GetUserByID: %w", err)
+		return apimodel.User{}, fmt.Errorf("querying GetUserByID: %w", err)
 	}
 
-	return user, nil
+	result := apimodel.User{
+		CreatedAt:   user.CreatedAt,
+		DisplayName: user.DisplayName,
+		Id:          user.ID,
+		UpdatedAt:   user.UpdatedAt,
+	}
+
+	return result, nil
 }

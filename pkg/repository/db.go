@@ -18,7 +18,7 @@ type DB interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 	PrepareContext(ctx context.Context, query string) (*sql.Stmt, error)
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
-	QueryRowContext(ctx context.Context, query string, args ...any) Row
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 	BeginTx(ctx context.Context) (DB, TransactionCloser, error)
 }
 
@@ -28,11 +28,6 @@ type TransactionCloser interface {
 }
 
 type InTransactionFunc func(ctx context.Context, db DB) (bool, error)
-
-type Row interface {
-	Scan(dest ...any) error
-	Err() error
-}
 
 type errorRow struct {
 	err error
@@ -87,7 +82,7 @@ func (d *sqlDbWrapper) QueryContext(ctx context.Context, query string, args ...a
 	return d.db.QueryContext(ctx, query, args...)
 }
 
-func (d *sqlDbWrapper) QueryRowContext(ctx context.Context, query string, args ...any) Row {
+func (d *sqlDbWrapper) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
 	return d.db.QueryRowContext(ctx, query, args...)
 }
 
@@ -118,7 +113,7 @@ func (d *dbInTransaction) QueryContext(ctx context.Context, query string, args .
 	return d.tx.QueryContext(ctx, query, args...)
 }
 
-func (d *dbInTransaction) QueryRowContext(ctx context.Context, query string, args ...any) Row {
+func (d *dbInTransaction) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
 	return d.tx.QueryRowContext(ctx, query, args...)
 }
 
@@ -197,12 +192,12 @@ func (d *dbInSavepoint) QueryContext(ctx context.Context, query string, args ...
 	return d.baseDb.QueryContext(ctx, query, args...)
 }
 
-func (d *dbInSavepoint) QueryRowContext(ctx context.Context, query string, args ...any) Row {
+func (d *dbInSavepoint) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
 	d.lock.RLock()
 	defer d.lock.RUnlock()
 
 	if d.closed {
-		return &errorRow{err: ErrTransactionClosed}
+		panic(ErrTransactionClosed) // definitely not ideal, but sqlc needs something returning `*sql.Row`, not an interface of the same signatures :'(
 	}
 
 	return d.baseDb.QueryRowContext(ctx, query, args...)

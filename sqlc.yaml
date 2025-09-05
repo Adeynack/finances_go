@@ -1,0 +1,10 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "./pkg/repository/queries/"
+    schema: "./db/migrations"
+    gen:
+      go:
+        package: "sqlcdb"
+        out: "./pkg/repository/sqlcdb"
+        # emit_pointers_for_null_types: true # Works only with PGX
