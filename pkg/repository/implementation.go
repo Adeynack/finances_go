@@ -10,13 +10,8 @@ import (
 
 	"github.com/adeynack/finances/pkg/api/apimodel"
 	"github.com/adeynack/finances/pkg/platform/ctxval"
-	"github.com/adeynack/finances/pkg/repository/gen/finances/public/model"
-	. "github.com/adeynack/finances/pkg/repository/gen/finances/public/table"
-	. "github.com/go-jet/jet/v2/postgres"
 	"github.com/google/uuid"
-	"github.com/oapi-codegen/runtime/types"
 	"github.com/samber/lo"
-	slogctx "github.com/veqryn/slog-context"
 )
 
 func New() (R, error) {
@@ -36,51 +31,43 @@ func (r *implementation) GetBooks(ctx context.Context) ([]apimodel.Book, error) 
 		return nil, err
 	}
 
-	stmt := SELECT(
-		Books.AllColumns,
-		Users.DisplayName,
-	).FROM(
-		Books.
-			INNER_JOIN(Users, Users.ID.EQ(Books.OwnerID)),
-	).ORDER_BY(Books.Name, Books.ID)
+	const query = `-- GetBooks
+		select
+			books.created_at,
+			books.default_currency_iso_code,
+			books.id,
+			books.name,
+			books.owner_id,
+			users.display_name,
+			books.updated_at
+		from books
+		inner join users on users.id = books.owner_id
+		order by books.name, books.id
+	`
 
-	type BooksWithOwner struct {
-		model.Books
-		Owner model.Users
-	}
-
-	var booksFromDB []BooksWithOwner
-	err = stmt.QueryContext(ctx, db, &booksFromDB)
+	booksForAPIResponse := make([]apimodel.Book, 0)
+	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("fetching books from database: %w", err)
+		return nil, fmt.Errorf("querying GetBooks: %w", err)
 	}
 
-	slogctx.Info(ctx, fmt.Sprintf("getBooksFromRepo returned %d entries", len(booksFromDB)))
-
-	booksForAPIResponse := lo.Map(booksFromDB, func(b BooksWithOwner, _ int) apimodel.Book {
-		return apimodel.Book{
-			CreatedAt:              b.CreatedAt,
-			DefaultCurrencyIsoCode: b.DefaultCurrencyIsoCode,
-			Id:                     b.ID,
-			Name:                   b.Name,
-			OwnerId:                b.OwnerID,
-			OwnerDisplayName:       b.Owner.DisplayName,
-			UpdatedAt:              b.UpdatedAt,
+	for rows.Next() {
+		var b apimodel.Book
+		err = rows.Scan(
+			&b.CreatedAt,
+			&b.DefaultCurrencyIsoCode,
+			&b.Id,
+			&b.Name,
+			&b.OwnerId,
+			&b.OwnerDisplayName,
+			&b.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scanning GetBooks: %w", err)
 		}
-	})
 
-	// // Temporary code to prove the embedded transaction simulation works.
-	// InTransaction(ctx, db, func(ctx context.Context, db DB) (bool, error) {
-	// 	const query = `insert into books(created_at, updated_at, default_currency_iso_code, name, owner_id) values ($1, $2, $3, $4, $5)`
-	// 	_, err := db.ExecContext(ctx, query,
-	// 		time.Now(),
-	// 		time.Now(),
-	// 		"CAD",
-	// 		fmt.Sprintf("Foo %s", uuid.NewString()),
-	// 		"569bcfdd-4056-42cd-af9c-285fa5ce92c8",
-	// 	)
-	// 	return true, err
-	// })
+		booksForAPIResponse = append(booksForAPIResponse, b)
+	}
 
 	return booksForAPIResponse, nil
 }
@@ -91,35 +78,41 @@ func (r *implementation) GetBookByID(ctx context.Context, bookId uuid.UUID) (*ap
 		return nil, err
 	}
 
-	stmt := SELECT(
-		Books.AllColumns,
-		Users.DisplayName.AS("user_display_name"),
-	).FROM(
-		Books.
-			INNER_JOIN(Users, Users.ID.EQ(Books.OwnerID)),
-	).
-		WHERE(
-			Books.ID.EQ(UUID(bookId)),
-		)
+	const query = `-- GetBookByID
+		select
+			books.created_at,
+			books.default_currency_iso_code,
+			books.id,
+			books.name,
+			books.owner_id,
+			users.display_name,
+			books.updated_at
+		from books
+		inner join users on users.id = books.owner_id
+		where books.id = $1
+		limit 1
+	`
 
-	var book struct {
-		model.Books
-		UserDisplayName string
+	row := db.QueryRowContext(ctx, query, bookId)
+	if row.Err() != nil {
+		return nil, fmt.Errorf("querying GetBookByID: %w", row.Err())
 	}
-	err = stmt.QueryContext(ctx, db, &book)
+
+	var b apimodel.Book
+	err = row.Scan(
+		&b.CreatedAt,
+		&b.DefaultCurrencyIsoCode,
+		&b.Id,
+		&b.Name,
+		&b.OwnerId,
+		&b.OwnerDisplayName,
+		&b.UpdatedAt,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("fetching the book by its ID: %w", err)
+		return nil, fmt.Errorf("scanning GetBookByID: %w", err)
 	}
 
-	return &apimodel.Book{
-		CreatedAt:              book.CreatedAt,
-		DefaultCurrencyIsoCode: book.DefaultCurrencyIsoCode,
-		Id:                     book.ID,
-		Name:                   book.Name,
-		OwnerDisplayName:       book.UserDisplayName,
-		OwnerId:                book.OwnerID,
-		UpdatedAt:              book.UpdatedAt,
-	}, nil
+	return &b, nil
 }
 
 func (r *implementation) CreateBook(ctx context.Context, props apimodel.BookProperties) (apimodel.Book, error) {
@@ -138,41 +131,53 @@ func (r *implementation) CreateBook(ctx context.Context, props apimodel.BookProp
 		return apimodel.Book{}, fmt.Errorf("checking existence of book owner: %w", err)
 	}
 
-	// Create new book
-	stmt := Books.INSERT(
-		Books.CreatedAt,
-		Books.UpdatedAt,
-		Books.Name,
-		Books.OwnerID,
-		Books.DefaultCurrencyIsoCode,
-	).VALUES(
+	const query = `-- CreateBook
+		insert into books(
+			created_at,
+			updated_at,
+			name,
+			owner_id,
+			default_currency_iso_code
+		) values (
+			$1, -- created_at,
+			$2, -- updated_at,
+			$3, -- name,
+			$4, -- owner_id,
+			$5  -- default_currency_iso_code
+		)
+		returning
+			id,
+			created_at,
+			updated_at,
+			name,
+			owner_id,
+			default_currency_iso_code
+	`
+
+	row := db.QueryRowContext(ctx, query,
 		time.Now(),
 		time.Now(),
 		props.Name,
 		props.OwnerId,
 		props.DefaultCurrencyIsoCode,
-	).RETURNING(
-		Books.AllColumns,
 	)
-
-	var insertedBooks []model.Books
-	err = stmt.QueryContext(ctx, db, &insertedBooks)
-	if err != nil {
-		return apimodel.Book{}, fmt.Errorf("inserting a new book: %w", err)
+	if row.Err() != nil {
+		return apimodel.Book{}, fmt.Errorf("querying CreateBook: %w", row.Err())
 	}
-	if len(insertedBooks) != 1 {
-		return apimodel.Book{}, fmt.Errorf("expected 1 book to be inserted, got %d", len(insertedBooks))
-	}
-	book := insertedBooks[0]
 
 	result := apimodel.Book{
-		CreatedAt:              book.CreatedAt,
-		DefaultCurrencyIsoCode: book.DefaultCurrencyIsoCode,
-		Id:                     book.ID,
-		Name:                   book.Name,
-		OwnerDisplayName:       owner.DisplayName,
-		OwnerId:                book.OwnerID,
-		UpdatedAt:              book.UpdatedAt,
+		OwnerDisplayName: owner.DisplayName,
+	}
+	err = row.Scan(
+		&result.Id,
+		&result.CreatedAt,
+		&result.UpdatedAt,
+		&result.Name,
+		&result.OwnerId,
+		&result.DefaultCurrencyIsoCode,
+	)
+	if err != nil {
+		return apimodel.Book{}, fmt.Errorf("scanning CreateBook: %w", err)
 	}
 
 	return result, nil
@@ -184,50 +189,87 @@ func (r *implementation) GetExchangesWithSplits(ctx context.Context) ([]apimodel
 		return nil, err
 	}
 
-	stmt := SELECT(
-		Exchanges.AllColumns,
-		Splits.AllColumns,
-	).FROM(
-		Exchanges.
-			LEFT_JOIN(Splits, Splits.ExchangeID.EQ(Exchanges.ID)),
-	).ORDER_BY(Exchanges.Date)
+	const query = `-- GetExchangesWithSplits
+		select
+			exchanges.cheque,
+			exchanges.created_at,
+			exchanges.date,
+			exchanges.description,
+			exchanges.id,
+			exchanges.memo,
+			exchanges.register_id,
+			exchanges.status,
+			exchanges.updated_at,
+			splits.amount,
+			splits.counterpart_amount,
+			splits.created_at,
+			splits.destination_register_id,
+			splits.exchange_id,
+			splits.id,
+			splits.memo,
+			splits.status,
+			splits.updated_at
+		from
+			exchanges
+			left join splits on splits.exchange_id = exchanges.id
+		order by
+			exchanges.date,
+			exchanges.created_at,
+			exchanges.id,
+			splits.created_at,
+			splits.id
+	`
 
-	type ExchangesWithSplits struct {
-		model.Exchanges
-		Splits []model.Splits
-	}
-
-	var exchangesFromDB []ExchangesWithSplits
-	err = stmt.QueryContext(ctx, db, &exchangesFromDB)
+	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("fetching exchanges from database: %w", err)
+		return nil, fmt.Errorf("querying GetExchangesWithSplits: %w", err)
 	}
 
-	exchangesForAPIResponse := lo.Map(exchangesFromDB, func(e ExchangesWithSplits, _ int) apimodel.ExchangeWithSplits {
-		return apimodel.ExchangeWithSplits{
-			Cheque:      e.Cheque,
-			CreatedAt:   e.CreatedAt,
-			Date:        types.Date{Time: e.Date},
-			Description: e.Description,
-			Id:          e.ID,
-			Memo:        e.Memo,
-			RegisterId:  e.RegisterID,
-			Splits: lo.Map(e.Splits, func(s model.Splits, _ int) apimodel.Split {
-				return apimodel.Split{
-					Amount:                s.Amount,
-					CounterpartAmount:     s.CounterpartAmount,
-					CreatedAt:             s.CreatedAt,
-					DestinationRegisterId: s.DestinationRegisterID,
-					ExchangeId:            s.ExchangeID,
-					Id:                    s.ID,
-					Memo:                  s.Memo,
-					Status:                apimodel.ExchangeStatus(s.Status),
-					UpdatedAt:             s.UpdatedAt,
-				}
-			}),
-			Status:    apimodel.ExchangeStatus(e.Status),
-			UpdatedAt: time.Time{},
+	result := make([]*apimodel.ExchangeWithSplits, 0)
+	var exchange apimodel.ExchangeWithSplits
+	var split apimodel.Split
+	var currentExchange *apimodel.ExchangeWithSplits
+
+	for rows.Next() {
+		err = rows.Scan(
+			&exchange.Cheque,
+			&exchange.CreatedAt,
+			&exchange.Date.Time,
+			&exchange.Description,
+			&exchange.Id,
+			&exchange.Memo,
+			&exchange.RegisterId,
+			&exchange.Status,
+			&exchange.UpdatedAt,
+			&split.Amount,
+			&split.CounterpartAmount,
+			&split.CreatedAt,
+			&split.DestinationRegisterId,
+			&split.ExchangeId,
+			&split.Id,
+			&split.Memo,
+			&split.Status,
+			&split.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scanning GetExchangesWithSplits: %w", err)
 		}
+
+		if currentExchange == nil || exchange.Id != currentExchange.Id {
+			exchangeCopy := exchange // cause a copy of exchange to be created
+			currentExchange = &exchangeCopy
+			currentExchange.Splits = []apimodel.Split{split}
+			result = append(result, currentExchange)
+		} else {
+			currentExchange.Splits = append(currentExchange.Splits, split)
+		}
+	}
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("getting next row for GetExchangesWithSplits: %w", err)
+	}
+
+	exchangesForAPIResponse := lo.Map(result, func(item *apimodel.ExchangeWithSplits, _ int) apimodel.ExchangeWithSplits {
+		return lo.FromPtr(item)
 	})
 
 	return exchangesForAPIResponse, nil
@@ -239,24 +281,34 @@ func (r *implementation) GetUserByID(ctx context.Context, userID uuid.UUID) (api
 		return apimodel.User{}, err
 	}
 
-	stmt := SELECT(
-		Users.AllColumns,
-	).FROM(
-		Users,
-	).WHERE(
-		Users.ID.EQ(UUID(userID)),
-	).LIMIT(1)
+	const query = `-- GetUserByID
+		select
+			users.created_at,
+			users.display_name,
+			users.id,
+			users.updated_at
+		from
+			users
+		where
+			users.id = $1
+		limit 1
+	`
 
-	var user model.Users
-	err = stmt.QueryContext(ctx, db, &user)
-	if err != nil {
-		return apimodel.User{}, fmt.Errorf("fetching the user by its ID: %w", err)
+	row := db.QueryRowContext(ctx, query, userID)
+	if row.Err() != nil {
+		return apimodel.User{}, fmt.Errorf("querying GetUserByID: %w", row.Err())
 	}
 
-	return apimodel.User{
-		CreatedAt:   user.CreatedAt,
-		DisplayName: user.DisplayName,
-		Id:          user.ID,
-		UpdatedAt:   user.UpdatedAt,
-	}, nil
+	var user apimodel.User
+	err = row.Scan(
+		&user.CreatedAt,
+		&user.DisplayName,
+		&user.Id,
+		&user.UpdatedAt,
+	)
+	if err != nil {
+		return apimodel.User{}, fmt.Errorf("scanning GetUserByID: %w", err)
+	}
+
+	return user, nil
 }

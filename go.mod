@@ -5,7 +5,6 @@ go 1.25
 require (
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-crypt/crypt v0.4.5
-	github.com/go-jet/jet/v2 v2.13.0
 	github.com/google/uuid v1.6.0
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/veqryn/slog-context v0.8.0
@@ -294,7 +293,6 @@ require (
 tool (
 	github.com/DarthSim/overmind
 	github.com/air-verse/air
-	github.com/go-jet/jet/v2/cmd/jet
 	github.com/golangci/golangci-lint/cmd/golangci-lint
 	github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt
 	github.com/joho/godotenv/cmd/godotenv

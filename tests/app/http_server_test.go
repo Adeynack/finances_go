@@ -60,18 +60,18 @@ func TestHttpServer(t *testing.T) {
 			s.When("the owner ID does not exist", func(s *testcase.Spec) {
 				requestBody.Let(s, func(t *testcase.T) io.Reader {
 					return strings.NewReader(`{
-							"book": {
-								"name": "My all new shiny book",
-								"owner_id": "095005a0-aa18-43f6-b578-66800aa6aae8",
-								"default_currency_iso_code": "CAD"
-							}
-						}
-					`)
+					"book": {
+						"name": "My all new shiny book",
+						"owner_id": "095005a0-aa18-43f6-b578-66800aa6aae8",
+						"default_currency_iso_code": "CAD"
+					}
+				}
+			`)
 				})
 
 				s.Then("it fails with a 422 Unprocessable Entity", func(t *testcase.T) {
 					r := response.Get(t)
-					require.Equal(t, http.StatusUnprocessableEntity, r.Code)
+					require.Equal(t, http.StatusUnprocessableEntity, r.Code, r.Body)
 					var jsonError apimodel.Error
 					require.NoError(t, json.Unmarshal(r.Body.Bytes(), &jsonError))
 					require.Equal(t, "validation error: owner does not exist", jsonError.Title)
@@ -124,27 +124,27 @@ func TestHttpServer(t *testing.T) {
 
 				require.Equal(t, http.StatusOK, r.Code, r.Body)
 				const expectedBody = `{
-							"books": [
-								{
-									"created_at": "2025-08-24T00:20:00Z",
-									"default_currency_iso_code": "USD",
-									"id": "5da6e20f-eecd-456b-a8dd-ae1a63d0268e",
-									"name": "Foo, the Book",
-									"owner_display_name": "Joe",
-									"owner_id": "569bcfdd-4056-42cd-af9c-285fa5ce92c8",
-									"updated_at": "2025-08-24T00:20:00Z"
-								},
-								{
-									"created_at": "2025-08-14T21:47:58.211393Z",
-									"default_currency_iso_code": "EUR",
-									"id": "8d8666c0-016f-49fb-8f59-4150a822ffb2",
-									"name": "Joe's Book",
-									"owner_display_name": "Joe",
-									"owner_id": "569bcfdd-4056-42cd-af9c-285fa5ce92c8",
-									"updated_at": "2025-08-14T21:47:58.211393Z"
-								}
-							]
-						}`
+								"books": [
+									{
+										"created_at": "2025-08-24T00:20:00Z",
+										"default_currency_iso_code": "USD",
+										"id": "5da6e20f-eecd-456b-a8dd-ae1a63d0268e",
+										"name": "Foo, the Book",
+										"owner_display_name": "Joe",
+										"owner_id": "569bcfdd-4056-42cd-af9c-285fa5ce92c8",
+										"updated_at": "2025-08-24T00:20:00Z"
+									},
+									{
+										"created_at": "2025-08-14T21:47:58.211393Z",
+										"default_currency_iso_code": "EUR",
+										"id": "8d8666c0-016f-49fb-8f59-4150a822ffb2",
+										"name": "Joe's Book",
+										"owner_display_name": "Joe",
+										"owner_id": "569bcfdd-4056-42cd-af9c-285fa5ce92c8",
+										"updated_at": "2025-08-14T21:47:58.211393Z"
+									}
+								]
+							}`
 				require.JSONEq(t, expectedBody, r.Body.String(), r.Body)
 			})
 		})
@@ -192,47 +192,6 @@ func TestHttpServer(t *testing.T) {
 				const expectedBody = `{
 								"exchanges": [
 									{
-										"created_at": "2025-08-14T21:53:51.988009Z",
-										"date": "2025-08-14",
-										"description": "Grocery",
-										"id": "4c703f3b-7505-4785-9c63-14b38b9e1129",
-										"register_id": "7625b655-732d-49e0-a86b-43994ea89359",
-										"splits": [
-											{
-												"amount": 10000,
-												"counterpart_amount": -10000,
-												"created_at": "2025-08-14T21:54:36.523784Z",
-												"destination_register_id": "f01ac27a-89f4-4aab-b534-0cf77cee659c",
-												"exchange_id": "4c703f3b-7505-4785-9c63-14b38b9e1129",
-												"id": "61dad97b-f7a0-45eb-b325-e6fa5f601937",
-												"status": "uncleared",
-												"updated_at": "2025-08-14T21:54:36.523784Z"
-											},
-											{
-												"amount": 1000,
-												"counterpart_amount": -1000,
-												"created_at": "2025-08-14T21:54:36.523784Z",
-												"destination_register_id": "af903dfd-3e65-41d2-83f8-db1422b5159c",
-												"exchange_id": "4c703f3b-7505-4785-9c63-14b38b9e1129",
-												"id": "118dd813-e2c0-4eed-8dc4-773b87de9b93",
-												"status": "uncleared",
-												"updated_at": "2025-08-14T21:54:36.523784Z"
-											},
-											{
-												"amount": 5012,
-												"counterpart_amount": -5012,
-												"created_at": "2025-08-14T21:54:36.523784Z",
-												"destination_register_id": "df622be3-dff4-4541-b2c7-40947bc68d5f",
-												"exchange_id": "4c703f3b-7505-4785-9c63-14b38b9e1129",
-												"id": "88c2dfe2-5589-4695-bd6f-2ccd24bda109",
-												"status": "uncleared",
-												"updated_at": "2025-08-14T21:54:36.523784Z"
-											}
-										],
-										"status": "uncleared",
-										"updated_at": "0001-01-01T00:00:00Z"
-									},
-									{
 										"created_at": "2025-08-14T21:50:45.43635Z",
 										"date": "2025-08-14",
 										"description": "Transfer to credit card",
@@ -251,7 +210,48 @@ func TestHttpServer(t *testing.T) {
 											}
 										],
 										"status": "uncleared",
-										"updated_at": "0001-01-01T00:00:00Z"
+										"updated_at": "2025-08-14T21:50:45.43635Z"
+									},
+									{
+										"created_at": "2025-08-14T21:53:51.988009Z",
+										"date": "2025-08-14",
+										"description": "Grocery",
+										"id": "4c703f3b-7505-4785-9c63-14b38b9e1129",
+										"register_id": "7625b655-732d-49e0-a86b-43994ea89359",
+										"splits": [
+											{
+												"amount": 1000,
+												"counterpart_amount": -1000,
+												"created_at": "2025-08-14T21:54:36.523784Z",
+												"destination_register_id": "af903dfd-3e65-41d2-83f8-db1422b5159c",
+												"exchange_id": "4c703f3b-7505-4785-9c63-14b38b9e1129",
+												"id": "118dd813-e2c0-4eed-8dc4-773b87de9b93",
+												"status": "uncleared",
+												"updated_at": "2025-08-14T21:54:36.523784Z"
+											},
+											{
+												"amount": 10000,
+												"counterpart_amount": -10000,
+												"created_at": "2025-08-14T21:54:36.523784Z",
+												"destination_register_id": "f01ac27a-89f4-4aab-b534-0cf77cee659c",
+												"exchange_id": "4c703f3b-7505-4785-9c63-14b38b9e1129",
+												"id": "61dad97b-f7a0-45eb-b325-e6fa5f601937",
+												"status": "uncleared",
+												"updated_at": "2025-08-14T21:54:36.523784Z"
+											},
+											{
+												"amount": 5012,
+												"counterpart_amount": -5012,
+												"created_at": "2025-08-14T21:54:36.523784Z",
+												"destination_register_id": "df622be3-dff4-4541-b2c7-40947bc68d5f",
+												"exchange_id": "4c703f3b-7505-4785-9c63-14b38b9e1129",
+												"id": "88c2dfe2-5589-4695-bd6f-2ccd24bda109",
+												"status": "uncleared",
+												"updated_at": "2025-08-14T21:54:36.523784Z"
+											}
+										],
+										"status": "uncleared",
+										"updated_at": "2025-08-14T21:53:51.988009Z"
 									},
 									{
 										"created_at": "2025-08-14T21:53:51.988009Z",
@@ -260,16 +260,6 @@ func TestHttpServer(t *testing.T) {
 										"id": "862207f1-1d28-40b5-903f-d3dbb312e4b9",
 										"register_id": "7625b655-732d-49e0-a86b-43994ea89359",
 										"splits": [
-											{
-												"amount": 3000,
-												"counterpart_amount": -3000,
-												"created_at": "2025-08-14T21:54:36.523784Z",
-												"destination_register_id": "af903dfd-3e65-41d2-83f8-db1422b5159c",
-												"exchange_id": "862207f1-1d28-40b5-903f-d3dbb312e4b9",
-												"id": "e4261caa-4924-491d-9b3c-2be680f83859",
-												"status": "uncleared",
-												"updated_at": "2025-08-14T21:54:36.523784Z"
-											},
 											{
 												"amount": 1000,
 												"counterpart_amount": -1000,
@@ -289,10 +279,20 @@ func TestHttpServer(t *testing.T) {
 												"id": "9b861a0a-3637-471e-b24c-d121f5a273ca",
 												"status": "uncleared",
 												"updated_at": "2025-08-14T21:54:36.523784Z"
+											},
+											{
+												"amount": 3000,
+												"counterpart_amount": -3000,
+												"created_at": "2025-08-14T21:54:36.523784Z",
+												"destination_register_id": "af903dfd-3e65-41d2-83f8-db1422b5159c",
+												"exchange_id": "862207f1-1d28-40b5-903f-d3dbb312e4b9",
+												"id": "e4261caa-4924-491d-9b3c-2be680f83859",
+												"status": "uncleared",
+												"updated_at": "2025-08-14T21:54:36.523784Z"
 											}
 										],
 										"status": "uncleared",
-										"updated_at": "0001-01-01T00:00:00Z"
+										"updated_at": "2025-08-14T21:53:51.988009Z"
 									}
 								]
 							}`

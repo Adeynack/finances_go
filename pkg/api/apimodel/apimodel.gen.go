@@ -58,6 +58,19 @@ type Error struct {
 	Type *string `json:"type,omitempty"`
 }
 
+// Exchange defines model for Exchange.
+type Exchange struct {
+	Cheque      *string            `json:"cheque,omitempty"`
+	CreatedAt   time.Time          `json:"created_at"`
+	Date        openapi_types.Date `json:"date"`
+	Description string             `json:"description"`
+	Id          ID                 `json:"id"`
+	Memo        *string            `json:"memo,omitempty"`
+	RegisterId  ID                 `json:"register_id"`
+	Status      ExchangeStatus     `json:"status"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+}
+
 // ExchangeProperties defines model for ExchangeProperties.
 type ExchangeProperties struct {
 	Cheque      *string            `json:"cheque,omitempty"`

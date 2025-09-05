@@ -100,15 +100,3 @@ _psql:
 
 .PHONY: db_full_reset
 db_full_reset: db_drop db_create db_migrate db_seed db_seed
-
-.PHONY: db_generate
-db_generate:
-	go tool godotenv make _db_generate
-
-.PHONY: _db_generate
-_db_generate:
-	@if [ "$(PGDATABASE)" != "finances" ]; then \
-		echo "Error: PGDATABASE must be 'finances' to run db_generate"; \
-	else \
-		go tool jet -dsn="${DATABASE_URL}" -path=./pkg/repository/gen; \
-	fi

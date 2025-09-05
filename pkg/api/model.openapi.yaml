@@ -30,6 +30,7 @@ components:
     ID:
       type: string
       format: uuid
+
     ExistingResource:
       type: object
       required:
@@ -88,8 +89,7 @@ components:
     ExchangeWithSplits:
       type: object
       allOf:
-        - $ref: "#/components/schemas/ExistingResource"
-        - $ref: "#/components/schemas/ExchangeProperties"
+        - $ref: "#/components/schemas/Exchange"
         - type: object
           required:
             - splits
@@ -120,6 +120,11 @@ components:
           type: string
         status:
           $ref: "#/components/schemas/ExchangeStatus"
+
+    Exchange:
+      allOf:
+        - $ref: "#/components/schemas/ExistingResource"
+        - $ref: "#/components/schemas/ExchangeProperties"
 
     Split:
       type: object
