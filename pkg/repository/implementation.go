@@ -12,7 +12,9 @@ import (
 	"github.com/adeynack/finances/pkg/platform/ctxval"
 	"github.com/adeynack/finances/pkg/repository/dbmodel"
 	"github.com/google/uuid"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 	"github.com/samber/lo"
+	"github.com/uptrace/bun"
 )
 
 func New() (R, error) {
@@ -131,55 +133,51 @@ func (r *implementation) CreateBook(ctx context.Context, props apimodel.BookProp
 }
 
 func (r *implementation) GetExchangesWithSplits(ctx context.Context) ([]apimodel.ExchangeWithSplits, error) {
-	return nil, errors.New("TODO")
-	// db, err := r.resolveSqlcDb(ctx)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	db, err := ctxval.Resolve[DB](ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	// exchanges, err := db.GetExchanges(ctx)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("querying GetExchanges: %w", err)
-	// }
+	var exchanges []dbmodel.Exchange
+	err = db.NewSelect().
+		Model(&exchanges).
+		Relation("Splits", func(sq *bun.SelectQuery) *bun.SelectQuery {
+			return sq.Order("split.created_at", "split.id")
+		}).
+		Order("exchange.date", "exchange.created_at", "exchange.id").
+		Scan(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("querying GetExchangesWithSplits: %w", err)
+	}
 
-	// exchangeIds := lo.Map(exchanges, func(e sqlcdb.Exchange, _ int) uuid.UUID { return e.ID })
-	// splits, err := db.GetSplitsForExchangeIds(ctx, exchangeIds)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("querying GetSplitsForExchangeIds: %w", err)
-	// }
+	result := lo.Map(exchanges, func(e dbmodel.Exchange, _ int) apimodel.ExchangeWithSplits {
+		return apimodel.ExchangeWithSplits{
+			Cheque:      e.Cheque,
+			CreatedAt:   e.CreatedAt,
+			Date:        openapi_types.Date{Time: e.Date},
+			Description: e.Description,
+			Id:          e.ID,
+			Memo:        e.Memo,
+			RegisterId:  e.RegisterID,
+			Splits: lo.Map(e.Splits, func(s dbmodel.Split, _ int) apimodel.Split {
+				return apimodel.Split{
+					Amount:                s.Amount,
+					CounterpartAmount:     s.CounterpartAmount,
+					CreatedAt:             s.CreatedAt,
+					DestinationRegisterId: s.DestinationRegisterId,
+					ExchangeId:            s.ExchangeID,
+					Id:                    s.ID,
+					Memo:                  s.Memo,
+					Status:                apimodel.ExchangeStatus(s.Status),
+					UpdatedAt:             s.UpdatedAt,
+				}
+			}),
+			Status:    apimodel.ExchangeStatus(e.Status),
+			UpdatedAt: e.UpdatedAt,
+		}
+	})
 
-	// splitsByExchangeId := lo.GroupByMap(splits, func(s sqlcdb.GetSplitsForExchangeIdsRow) (uuid.UUID, apimodel.Split) {
-	// 	return s.ExchangeID, apimodel.Split{
-	// 		Amount:                s.Amount,
-	// 		CounterpartAmount:     int64Ptr(s.CounterpartAmount),
-	// 		CreatedAt:             s.CreatedAt,
-	// 		DestinationRegisterId: s.DestinationRegisterID,
-	// 		ExchangeId:            s.ExchangeID,
-	// 		Id:                    s.ID,
-	// 		Memo:                  strPtr(s.Memo),
-	// 		Status:                apimodel.ExchangeStatus(s.Status),
-	// 		UpdatedAt:             s.UpdatedAt,
-	// 	}
-	// })
-
-	// result := lo.Map(exchanges, func(e sqlcdb.Exchange, _ int) apimodel.ExchangeWithSplits {
-	// 	splitsForExchange := splitsByExchangeId[e.ID]
-
-	// 	return apimodel.ExchangeWithSplits{
-	// 		Cheque:      strPtr(e.Cheque),
-	// 		CreatedAt:   e.CreatedAt,
-	// 		Date:        types.Date{Time: e.Date},
-	// 		Description: e.Description,
-	// 		Id:          e.ID,
-	// 		Memo:        strPtr(e.Memo),
-	// 		RegisterId:  e.RegisterID,
-	// 		Splits:      splitsForExchange,
-	// 		Status:      apimodel.ExchangeStatus(e.Status),
-	// 		UpdatedAt:   e.UpdatedAt,
-	// 	}
-	// })
-
-	// return result, nil
+	return result, nil
 }
 
 func (r *implementation) GetUserByID(ctx context.Context, userID uuid.UUID) (apimodel.User, error) {
