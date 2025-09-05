@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/adeynack/finances/pkg/api/apimodel"
 	"github.com/adeynack/finances/pkg/platform/ctxval"
@@ -87,44 +88,46 @@ func (r *implementation) GetBookByID(ctx context.Context, bookId uuid.UUID) (*ap
 }
 
 func (r *implementation) CreateBook(ctx context.Context, props apimodel.BookProperties) (apimodel.Book, error) {
-	return apimodel.Book{}, errors.New("TODO")
-	// db, err := r.resolveSqlcDb(ctx)
-	// if err != nil {
-	// 	return apimodel.Book{}, err
-	// }
+	db, err := ctxval.Resolve[DB](ctx)
+	if err != nil {
+		return apimodel.Book{}, err
+	}
 
-	// // Validate if the user exists
-	// owner, err := r.GetUserByID(ctx, props.OwnerId)
-	// if err != nil {
-	// 	if r.errorIsEmptyResultSet(err) {
-	// 		return apimodel.Book{}, fmt.Errorf("%w: owner does not exist", ErrValidation)
-	// 	}
+	// Validate if the user exists
+	var owner dbmodel.User
+	err = db.NewSelect().Model(&owner).Where("id = ?", props.OwnerId).Scan(ctx)
+	if err != nil {
+		if r.errorIsEmptyResultSet(err) {
+			return apimodel.Book{}, fmt.Errorf("%w: owner does not exist", ErrValidation)
+		}
 
-	// 	return apimodel.Book{}, fmt.Errorf("checking existence of book owner: %w", err)
-	// }
+		return apimodel.Book{}, fmt.Errorf("checking existence of book owner: %w", err)
+	}
 
-	// book, err := db.CreateBook(ctx, sqlcdb.CreateBookParams{
-	// 	CreatedAt:              time.Now(),
-	// 	UpdatedAt:              time.Now(),
-	// 	Name:                   props.Name,
-	// 	OwnerID:                props.OwnerId,
-	// 	DefaultCurrencyIsoCode: props.DefaultCurrencyIsoCode,
-	// })
-	// if err != nil {
-	// 	return apimodel.Book{}, fmt.Errorf("querying CreateBook: %w", err)
-	// }
+	book := dbmodel.Book{
+		CreatedAt:              time.Now(),
+		UpdatedAt:              time.Now(),
+		Name:                   props.Name,
+		OwnerID:                props.OwnerId,
+		DefaultCurrencyIsoCode: props.DefaultCurrencyIsoCode,
+	}
 
-	// result := apimodel.Book{
-	// 	CreatedAt:              book.CreatedAt,
-	// 	DefaultCurrencyIsoCode: book.DefaultCurrencyIsoCode,
-	// 	Id:                     book.ID,
-	// 	Name:                   book.Name,
-	// 	OwnerDisplayName:       owner.DisplayName,
-	// 	OwnerId:                book.OwnerID,
-	// 	UpdatedAt:              book.UpdatedAt,
-	// }
+	_, err = db.NewInsert().Model(&book).Exec(ctx)
+	if err != nil {
+		return apimodel.Book{}, fmt.Errorf("querying CreateBook: %w", err)
+	}
 
-	// return result, nil
+	result := apimodel.Book{
+		CreatedAt:              book.CreatedAt,
+		DefaultCurrencyIsoCode: book.DefaultCurrencyIsoCode,
+		Id:                     book.ID,
+		Name:                   book.Name,
+		OwnerDisplayName:       owner.DisplayName,
+		OwnerId:                book.OwnerID,
+		UpdatedAt:              book.UpdatedAt,
+	}
+
+	return result, nil
 }
 
 func (r *implementation) GetExchangesWithSplits(ctx context.Context) ([]apimodel.ExchangeWithSplits, error) {

@@ -15,6 +15,6 @@ type User struct {
 	UpdatedAt         time.Time `bun:",notnull,nullzero,default:current_timestamp"`
 	Email             string    `bun:",notnull,nullzero,unique"`
 	EncryptedPassword string    `bun:",notnull,nullzero"`
-	Admin             bool      `bun:",notnull,default=false"`
+	Admin             bool      `bun:",notnull,default=0"`
 	DisplayName       string    `bun:",notnull,nullzero"`
 }

@@ -1,13 +1,19 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/adeynack/finances/pkg/api/apimodel"
+	"github.com/adeynack/finances/pkg/api/apiserver"
 	"github.com/adeynack/finances/tests"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"go.llib.dev/testcase"
 )
@@ -49,65 +55,65 @@ func TestHttpServer(t *testing.T) {
 		path.LetValue(s, "/books")
 
 		s.When("POST", func(s *testcase.Spec) {
-			// method.LetValue(s, http.MethodPost)
+			method.LetValue(s, http.MethodPost)
 
-			// s.When("the owner ID does not exist", func(s *testcase.Spec) {
-			// 	requestBody.Let(s, func(t *testcase.T) io.Reader {
-			// 		return strings.NewReader(`{
-			// 		"book": {
-			// 			"name": "My all new shiny book",
-			// 			"owner_id": "095005a0-aa18-43f6-b578-66800aa6aae8",
-			// 			"default_currency_iso_code": "CAD"
-			// 		}
-			// 	}
-			// `)
-			// 	})
+			s.When("the owner ID does not exist", func(s *testcase.Spec) {
+				requestBody.Let(s, func(t *testcase.T) io.Reader {
+					return strings.NewReader(`{
+					"book": {
+						"name": "My all new shiny book",
+						"owner_id": "095005a0-aa18-43f6-b578-66800aa6aae8",
+						"default_currency_iso_code": "CAD"
+					}
+				}
+			`)
+				})
 
-			// 	s.Then("it fails with a 422 Unprocessable Entity", func(t *testcase.T) {
-			// 		r := response.Get(t)
-			// 		require.Equal(t, http.StatusUnprocessableEntity, r.Code, r.Body)
-			// 		var jsonError apimodel.Error
-			// 		require.NoError(t, json.Unmarshal(r.Body.Bytes(), &jsonError))
-			// 		require.Equal(t, "validation error: owner does not exist", jsonError.Title)
-			// 	})
-			// })
+				s.Then("it fails with a 422 Unprocessable Entity", func(t *testcase.T) {
+					r := response.Get(t)
+					require.Equal(t, http.StatusUnprocessableEntity, r.Code, r.Body)
+					var jsonError apimodel.Error
+					require.NoError(t, json.Unmarshal(r.Body.Bytes(), &jsonError))
+					require.Equal(t, "validation error: owner does not exist", jsonError.Title)
+				})
+			})
 
-			// s.When("the request contains a valid book to create", func(s *testcase.Spec) {
-			// 	requestBody.Let(s, func(t *testcase.T) io.Reader {
-			// 		return strings.NewReader(`{
-			// 				"book": {
-			// 					"name": "My all new shiny book",
-			// 					"owner_id": "569bcfdd-4056-42cd-af9c-285fa5ce92c8",
-			// 					"default_currency_iso_code": "CAD"
-			// 				}
-			// 			}`)
-			// 	})
+			s.When("the request contains a valid book to create", func(s *testcase.Spec) {
+				requestBody.Let(s, func(t *testcase.T) io.Reader {
+					return strings.NewReader(`{
+							"book": {
+								"name": "My all new shiny book",
+								"owner_id": "569bcfdd-4056-42cd-af9c-285fa5ce92c8",
+								"default_currency_iso_code": "CAD"
+							}
+						}`)
+				})
 
-			// 	s.Then("it creates a book and responds 201 Created with the new book as body", func(t *testcase.T) {
-			// 		startTime := time.Now()
-			// 		r := response.Get(t)
+				s.Then("it creates a book and responds 201 Created with the new book as body", func(t *testcase.T) {
+					startTime := time.Now()
+					r := response.Get(t)
 
-			// 		require.Equal(t, http.StatusCreated, r.Code, r.Body)
+					require.Equal(t, http.StatusCreated, r.Code, r.Body)
 
-			// 		var body apiserver.CreateBook201JSONResponse
-			// 		require.NoError(t, json.Unmarshal(r.Body.Bytes(), &body), r.Body)
-			// 		require.NotZero(t, body.Book.Id, "expecting an ID to be set")
-			// 		require.GreaterOrEqual(t, body.Book.CreatedAt, startTime, "expecting CreatedAt to be set to book creation time")
-			// 		require.GreaterOrEqual(t, body.Book.UpdatedAt, startTime, "expecting CreatedAt to be set to book creation time")
-			// 		expectedBody := apiserver.CreateBook201JSONResponse{
-			// 			Book: apimodel.Book{
-			// 				Id:                     body.Book.Id,
-			// 				CreatedAt:              body.Book.CreatedAt,
-			// 				UpdatedAt:              body.Book.UpdatedAt,
-			// 				Name:                   "My all new shiny book",
-			// 				OwnerId:                uuid.MustParse("569bcfdd-4056-42cd-af9c-285fa5ce92c8"),
-			// 				OwnerDisplayName:       "Joe",
-			// 				DefaultCurrencyIsoCode: "CAD",
-			// 			},
-			// 		}
-			// 		require.Equal(t, expectedBody, body, r.Body)
-			// 	})
-			// })
+					var body apiserver.CreateBook201JSONResponse
+					require.NoError(t, json.Unmarshal(r.Body.Bytes(), &body), r.Body)
+					require.NotZero(t, body.Book.Id, "expecting an ID to be set")
+					require.GreaterOrEqual(t, body.Book.CreatedAt, startTime, "expecting CreatedAt to be set to book creation time")
+					require.GreaterOrEqual(t, body.Book.UpdatedAt, startTime, "expecting CreatedAt to be set to book creation time")
+					expectedBody := apiserver.CreateBook201JSONResponse{
+						Book: apimodel.Book{
+							Id:                     body.Book.Id,
+							CreatedAt:              body.Book.CreatedAt,
+							UpdatedAt:              body.Book.UpdatedAt,
+							Name:                   "My all new shiny book",
+							OwnerId:                uuid.MustParse("569bcfdd-4056-42cd-af9c-285fa5ce92c8"),
+							OwnerDisplayName:       "Joe",
+							DefaultCurrencyIsoCode: "CAD",
+						},
+					}
+					require.Equal(t, expectedBody, body, r.Body)
+				})
+			})
 		})
 
 		s.When("GET", func(s *testcase.Spec) {
