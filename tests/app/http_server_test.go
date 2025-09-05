@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -144,33 +145,33 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	s.Describe("/books/:id", func(s *testcase.Spec) {
-		// bookId := testcase.Let[string](s, nil)
-		// path.Let(s, func(t *testcase.T) string { return fmt.Sprintf("/books/%s", bookId.Get(t)) })
+		bookId := testcase.Let[string](s, nil)
+		path.Let(s, func(t *testcase.T) string { return fmt.Sprintf("/books/%s", bookId.Get(t)) })
 
-		// s.When("GET", func(s *testcase.Spec) {
-		// 	method.LetValue(s, http.MethodGet)
+		s.When("GET", func(s *testcase.Spec) {
+			method.LetValue(s, http.MethodGet)
 
-		// 	s.When("the book ID exists", func(s *testcase.Spec) {
-		// 		bookId.LetValue(s, "8d8666c0-016f-49fb-8f59-4150a822ffb2")
+			s.When("the book ID exists", func(s *testcase.Spec) {
+				bookId.LetValue(s, "8d8666c0-016f-49fb-8f59-4150a822ffb2")
 
-		// 		s.Then("it responds with 200 OK with the book", func(t *testcase.T) {
-		// 			r := response.Get(t)
-		// 			require.Equal(t, http.StatusOK, r.Code, r.Body)
-		// 			const expectedBody = `{
-		// 				"book": {
-		// 					"created_at": "2025-08-14T21:47:58.211393Z",
-		// 					"default_currency_iso_code": "EUR",
-		// 					"id": "8d8666c0-016f-49fb-8f59-4150a822ffb2",
-		// 					"name": "Joe's Book",
-		// 					"owner_display_name": "Joe",
-		// 					"owner_id": "569bcfdd-4056-42cd-af9c-285fa5ce92c8",
-		// 					"updated_at": "2025-08-14T21:47:58.211393Z"
-		// 				}
-		// 			}`
-		// 			require.JSONEq(t, expectedBody, r.Body.String(), r.Body)
-		// 		})
-		// 	})
-		// })
+				s.Then("it responds with 200 OK with the book", func(t *testcase.T) {
+					r := response.Get(t)
+					require.Equal(t, http.StatusOK, r.Code, r.Body)
+					const expectedBody = `{
+						"book": {
+							"created_at": "2025-08-14T21:47:58.211393Z",
+							"default_currency_iso_code": "EUR",
+							"id": "8d8666c0-016f-49fb-8f59-4150a822ffb2",
+							"name": "Joe's Book",
+							"owner_display_name": "Joe",
+							"owner_id": "569bcfdd-4056-42cd-af9c-285fa5ce92c8",
+							"updated_at": "2025-08-14T21:47:58.211393Z"
+						}
+					}`
+					require.JSONEq(t, expectedBody, r.Body.String(), r.Body)
+				})
+			})
+		})
 	})
 
 	s.Describe("/exchanges", func(s *testcase.Spec) {

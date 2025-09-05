@@ -58,28 +58,32 @@ func (r *implementation) GetBooks(ctx context.Context) ([]apimodel.Book, error) 
 }
 
 func (r *implementation) GetBookByID(ctx context.Context, bookId uuid.UUID) (*apimodel.Book, error) {
-	return nil, errors.New("TODO")
-	// db, err := r.resolveSqlcDb(ctx)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	db, err := ctxval.Resolve[DB](ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	// book, err := db.GetBookByID(ctx, bookId)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("querying BookByID: %w", err)
-	// }
+	var book dbmodel.Book
+	err = db.NewSelect().
+		Model(&book).
+		Relation("Owner").
+		Where("book.id = ?", bookId).
+		Scan(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("querying BookByID: %w", err)
+	}
 
-	// b := apimodel.Book{
-	// 	CreatedAt:              book.CreatedAt,
-	// 	DefaultCurrencyIsoCode: book.DefaultCurrencyIsoCode,
-	// 	Id:                     book.ID,
-	// 	Name:                   book.Name,
-	// 	OwnerDisplayName:       book.OwnerDisplayName,
-	// 	OwnerId:                book.OwnerID,
-	// 	UpdatedAt:              book.UpdatedAt,
-	// }
+	b := apimodel.Book{
+		CreatedAt:              book.CreatedAt,
+		DefaultCurrencyIsoCode: book.DefaultCurrencyIsoCode,
+		Id:                     book.ID,
+		Name:                   book.Name,
+		OwnerDisplayName:       book.Owner.DisplayName,
+		OwnerId:                book.OwnerID,
+		UpdatedAt:              book.UpdatedAt,
+	}
 
-	// return &b, nil
+	return &b, nil
 }
 
 func (r *implementation) CreateBook(ctx context.Context, props apimodel.BookProperties) (apimodel.Book, error) {
