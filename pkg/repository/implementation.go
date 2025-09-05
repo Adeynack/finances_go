@@ -11,6 +11,7 @@ import (
 	"github.com/adeynack/finances/pkg/api/apimodel"
 	"github.com/adeynack/finances/pkg/platform/ctxval"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"github.com/samber/lo"
 )
 
@@ -183,13 +184,13 @@ func (r *implementation) CreateBook(ctx context.Context, props apimodel.BookProp
 	return result, nil
 }
 
-func (r *implementation) GetExchangesWithSplits(ctx context.Context) ([]apimodel.ExchangeWithSplits, error) {
+func (r *implementation) GetExchanges(ctx context.Context) ([]apimodel.Exchange, error) {
 	db, err := ctxval.Resolve[DB](ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	const query = `-- GetExchangesWithSplits
+	const query = `-- GetExchanges
 		select
 			exchanges.cheque,
 			exchanges.created_at,
@@ -199,36 +200,22 @@ func (r *implementation) GetExchangesWithSplits(ctx context.Context) ([]apimodel
 			exchanges.memo,
 			exchanges.register_id,
 			exchanges.status,
-			exchanges.updated_at,
-			splits.amount,
-			splits.counterpart_amount,
-			splits.created_at,
-			splits.destination_register_id,
-			splits.exchange_id,
-			splits.id,
-			splits.memo,
-			splits.status,
-			splits.updated_at
+			exchanges.updated_at
 		from
 			exchanges
-			left join splits on splits.exchange_id = exchanges.id
 		order by
 			exchanges.date,
 			exchanges.created_at,
-			exchanges.id,
-			splits.created_at,
-			splits.id
+			exchanges.id
 	`
 
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("querying GetExchangesWithSplits: %w", err)
+		return nil, fmt.Errorf("querying GetExchanges: %w", err)
 	}
 
-	result := make([]*apimodel.ExchangeWithSplits, 0)
-	var exchange apimodel.ExchangeWithSplits
-	var split apimodel.Split
-	var currentExchange *apimodel.ExchangeWithSplits
+	result := make([]apimodel.Exchange, 0)
+	var exchange apimodel.Exchange
 
 	for rows.Next() {
 		err = rows.Scan(
@@ -241,6 +228,55 @@ func (r *implementation) GetExchangesWithSplits(ctx context.Context) ([]apimodel
 			&exchange.RegisterId,
 			&exchange.Status,
 			&exchange.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scanning GetExchanges: %w", err)
+		}
+
+		result = append(result, exchange)
+	}
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("getting next row for GetExchangesWithSplits: %w", err)
+	}
+
+	return result, nil
+}
+
+func (r *implementation) GetSplitsForExchangeIds(ctx context.Context, exchangeIds []uuid.UUID) ([]apimodel.Split, error) {
+	db, err := ctxval.Resolve[DB](ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	const query = `-- GetSplitsForExchangeIds
+		select
+			splits.amount,
+			splits.counterpart_amount,
+			splits.created_at,
+			splits.destination_register_id,
+			splits.exchange_id,
+			splits.id,
+			splits.memo,
+			splits.status,
+			splits.updated_at
+		from
+			splits
+		where
+			splits.exchange_id = ANY($1)
+		order by
+			splits.created_at,
+			splits.id
+	`
+	rows, err := db.QueryContext(ctx, query, pq.Array(exchangeIds))
+	if err != nil {
+		return nil, fmt.Errorf("querying GetSplitsForExchangeIds: %w", err)
+	}
+
+	result := make([]apimodel.Split, 0)
+	var split apimodel.Split
+
+	for rows.Next() {
+		err = rows.Scan(
 			&split.Amount,
 			&split.CounterpartAmount,
 			&split.CreatedAt,
@@ -252,27 +288,50 @@ func (r *implementation) GetExchangesWithSplits(ctx context.Context) ([]apimodel
 			&split.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("scanning GetExchangesWithSplits: %w", err)
+			return nil, fmt.Errorf("scanning GetSplitsForExchangeIds: %w", err)
 		}
 
-		if currentExchange == nil || exchange.Id != currentExchange.Id {
-			exchangeCopy := exchange // cause a copy of exchange to be created
-			currentExchange = &exchangeCopy
-			currentExchange.Splits = []apimodel.Split{split}
-			result = append(result, currentExchange)
-		} else {
-			currentExchange.Splits = append(currentExchange.Splits, split)
-		}
+		result = append(result, split)
 	}
 	if rows.Err() != nil {
-		return nil, fmt.Errorf("getting next row for GetExchangesWithSplits: %w", err)
+		return nil, fmt.Errorf("getting next row for GetSplitsForExchangeIds: %w", err)
 	}
 
-	exchangesForAPIResponse := lo.Map(result, func(item *apimodel.ExchangeWithSplits, _ int) apimodel.ExchangeWithSplits {
-		return lo.FromPtr(item)
+	return result, nil
+}
+
+func (r *implementation) GetExchangesWithSplits(ctx context.Context) ([]apimodel.ExchangeWithSplits, error) {
+	exchanges, err := r.GetExchanges(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	exchangeIds := lo.Map(exchanges, func(e apimodel.Exchange, _ int) uuid.UUID { return e.Id })
+	splits, err := r.GetSplitsForExchangeIds(ctx, exchangeIds)
+	if err != nil {
+		return nil, err
+	}
+
+	splitsByExchangeId := lo.GroupBy(splits, func(s apimodel.Split) uuid.UUID { return s.ExchangeId })
+
+	result := lo.Map(exchanges, func(e apimodel.Exchange, _ int) apimodel.ExchangeWithSplits {
+		splitsForExchange := splitsByExchangeId[e.Id]
+
+		return apimodel.ExchangeWithSplits{
+			Cheque:      e.Cheque,
+			CreatedAt:   e.CreatedAt,
+			Date:        e.Date,
+			Description: e.Description,
+			Id:          e.Id,
+			Memo:        e.Memo,
+			RegisterId:  e.RegisterId,
+			Splits:      splitsForExchange,
+			Status:      e.Status,
+			UpdatedAt:   e.UpdatedAt,
+		}
 	})
 
-	return exchangesForAPIResponse, nil
+	return result, nil
 }
 
 func (r *implementation) GetUserByID(ctx context.Context, userID uuid.UUID) (apimodel.User, error) {
