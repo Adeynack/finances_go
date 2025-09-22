@@ -7,6 +7,8 @@ require (
 	github.com/go-crypt/crypt v0.4.5
 	github.com/google/uuid v1.6.0
 	github.com/oapi-codegen/runtime v1.1.2
+	github.com/uptrace/bun v1.2.15
+	github.com/uptrace/bun/driver/pgdriver v1.2.15
 	github.com/veqryn/slog-context v0.8.0
 )
 
@@ -219,8 +221,6 @@ require (
 	github.com/tursodatabase/libsql-client-go v0.0.0-20240902231107-85af5b9d094d // indirect
 	github.com/ultraware/funlen v0.2.0 // indirect
 	github.com/ultraware/whitespace v0.2.0 // indirect
-	github.com/uptrace/bun v1.2.15 // indirect
-	github.com/uptrace/bun/driver/pgdriver v1.2.15 // indirect
 	github.com/uudashr/gocognit v1.2.0 // indirect
 	github.com/uudashr/iface v1.3.1 // indirect
 	github.com/vertica/vertica-sql-go v1.3.3 // indirect
@@ -275,7 +275,6 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/lib/pq v1.10.9
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
