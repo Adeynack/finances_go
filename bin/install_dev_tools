@@ -1,0 +1,14 @@
+#!/bin/bash
+# Install tools needed by the project's development operations
+
+go mod download
+
+if ! command -v staticcheck &> /dev/null
+then
+  go install -v honnef.co/go/tools/cmd/staticcheck@latest
+fi
+
+if ! command -v golangci-lint &> /dev/null
+then
+  go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.56.2
+fi

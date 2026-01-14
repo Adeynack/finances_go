@@ -1,0 +1,2 @@
+#!/bin/bash
+bin/dotenv -c ${APP_ENV:-dev} go tool goose $@

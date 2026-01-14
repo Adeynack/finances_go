@@ -1,0 +1,19 @@
+package components
+
+import "github.com/adeynack/finances/app/utils"
+
+type ButtonProps struct {
+	Label      string
+	Type       string
+	Attributes templ.Attributes
+}
+
+templ Button(props ButtonProps) {
+	<button
+		type={ utils.ValueOr(props.Type, "button") }
+		class="font-bold py-2 px-4 rounded bg-blue-950 text-white hover:bg-blue-800"
+		{ props.Attributes... }
+	>
+		{ props.Label }
+	</button>
+}

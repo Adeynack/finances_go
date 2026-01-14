@@ -1,10 +1,27 @@
+# Environments
+.env.local
+.env.*.local
+
+# npm
+node_modules/
+
+# Generated Styles
+view/static/css/styles.css
+
+# Templ generated code
+*_templ.go
+*_templ.txt
+
 # overmind
 .overmind.sock
 
 # macOS
 .DS_Store
 
+# Temporary test code
+cmd/fiddle
+
 # Misc
-bin
+out
 tmp
 __debug_bin*

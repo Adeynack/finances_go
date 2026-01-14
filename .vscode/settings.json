@@ -1,3 +1,6 @@
 {
   "go.toolsManagement.autoUpdate": true,
+  "go.lintTool": "golangci-lint",
+  "go.lintFlags": [],
+  "makefile.configureOnOpen": false
 }

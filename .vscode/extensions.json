@@ -1,0 +1,22 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "rvest.vs-code-prettier-eslint",
+    "ms-vscode-remote.remote-containers",
+    "darkriszty.markdown-table-prettify",
+    "wmaurer.change-case",
+    "yzhang.markdown-all-in-one",
+    "darkriszty.markdown-table-prettify",
+    "trybick.terminal-zoom",
+    "netcorext.uuid-generator",
+    "redhat.vscode-yaml",
+    "ms-azuretools.vscode-docker",
+    "golang.go",
+    "ms-vscode.makefile-tools",
+    "neonxp.gotools",
+    "a-h.templ",
+    "adpyke.vscode-sql-formatter",
+    "bradlc.vscode-tailwindcss"
+  ]
+}
